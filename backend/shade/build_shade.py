@@ -43,7 +43,9 @@ COVERED_PATH = Path(__file__).resolve().parent / "covered.json"
 
 DATE = "2026-07-15"  # mid-July, the hottest part of the year in Tempe
 TIMEZONE = "America/Phoenix"
-TIMES = ["09:00", "12:00", "15:00", "18:00"]
+# One layer per daylight hour. On DATE the sun rises about 05:30 and sets about
+# 19:40, so 06:00-19:00 covers every hour with the sun above the horizon.
+TIMES = [f"{hour:02d}:00" for hour in range(6, 20)]
 METRIC_CRS = "EPSG:32612"  # UTM zone 12N, metres
 
 # Building height: OSM `height` if present, else `building:levels` x 3 m, else
