@@ -5,3 +5,5 @@ networkx>=3.3
 geopandas>=1.0
 shapely>=2.0
 pvlib>=0.11
+# Only for `build_shade --plot`.
+matplotlib>=3.8
