@@ -9,5 +9,4 @@ export const token = (name: string): string =>
 
 /** Route line colours. Fastest is neutral; coolest is the aqua/teal accent. */
 export const FASTEST_TOKEN = 'neutral'
-export const COOLEST_TOKEN = 'teal'
-export const COOLEST_FILL_TOKEN = 'aqua'
+export const COOLEST_TOKEN = 'cool'

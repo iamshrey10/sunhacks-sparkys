@@ -1,16 +1,17 @@
-import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { api, USE_MOCKS } from './api'
 import AskBox from './components/AskBox'
-import SearchField from './components/SearchField'
-import SearchResults from './components/SearchResults'
+import FloatingSearch from './components/FloatingSearch'
 import { useRecents, type Recent } from './hooks/useRecents'
 import { useSearch } from './hooks/useSearch'
-import { optionId, searchPlaces, type PlaceResult } from './search'
+import { searchPlaces, type PlaceResult } from './search'
 import HelpNow from './components/HelpNow'
 import RouteForm from './components/RouteForm'
 import { DEFAULT_TIME, buildRequest, type FormValue, type PickTarget } from './form'
 import BottomSheet, { type Snap } from './components/BottomSheet'
 import ComparisonCard from './components/ComparisonCard'
+import { RouteSkeleton } from './components/Skeleton'
+import Toast from './components/Toast'
 import RouteMap from './components/RouteMap'
 import SampleBadge from './components/SampleBadge'
 import { summaryText } from './routeSummary'
@@ -25,8 +26,11 @@ import {
 
 type ApiState = 'checking' | 'online' | 'offline'
 
-/** Space the floating header takes at the top of the map. */
-const HEADER_PX = 56
+const OUTSIDE_MESSAGE =
+  'Outside the walking-route area. Choose a place on campus or Mill Ave.'
+
+/** Space the floating header and search bar take at the top of the map. */
+const TOP_PAD = 124
 
 export default function App() {
   const [apiState, setApiState] = useState<ApiState>(
@@ -40,13 +44,27 @@ export default function App() {
   })
   const form: FormValue = { ...trip, prefs }
   // Trip details reset on reload; preferences are saved on this device.
+  // The newest form value, including updates made earlier in the same event, so
+  // two setForm calls in a row (e.g. parse, then pick a destination) compose.
+  const latest = useRef(form)
+  useEffect(() => {
+    latest.current = form
+  })
   const setForm = (update: FormValue | ((f: FormValue) => FormValue)) => {
-    const next = typeof update === 'function' ? update(form) : update
+    const prev = latest.current
+    const next = typeof update === 'function' ? update(prev) : update
+    latest.current = next
     setTrip({ start: next.start, end: next.end, departTime: next.departTime })
     setPrefs(next.prefs)
     // A point that changed by hand no longer has the searched place's name.
-    if (next.start !== form.start) setLabels((l) => ({ ...l, start: undefined }))
-    if (next.end !== form.end) setLabels((l) => ({ ...l, end: undefined }))
+    if (next.start !== prev.start) setLabels((l) => ({ ...l, start: undefined }))
+    if (next.end !== prev.end) {
+      setLabels((l) => ({ ...l, end: undefined }))
+      if (!fromSearch.current) {
+        search.setQuery('')
+        setEndOutside(false)
+      }
+    }
   }
   const [picking, setPicking] = useState<PickTarget | null>(null)
   const [snap, setSnap] = useState<Snap>('half')
@@ -61,7 +79,10 @@ export default function App() {
   // Friendly names for points chosen by search or location, instead of coordinates.
   const [labels, setLabels] = useState<Partial<Record<PickTarget, string>>>({})
   const searchInput = useRef<HTMLInputElement>(null)
-  const listboxId = useId()
+  // True while a place change comes from search, so the search text is kept.
+  const fromSearch = useRef(false)
+  // The chosen destination is beyond the walking-route area: never ask /route.
+  const [endOutside, setEndOutside] = useState(false)
   const [route, setRoute] = useState<RouteResponse | null>(null)
   const [explanation, setExplanation] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -107,7 +128,12 @@ export default function App() {
       },
     }))
 
+  // What Retry should run again after a failed request.
+  const lastRequest = useRef<RouteRequest | null>(null)
+
   const findRoute = (req: RouteRequest) => {
+    if (endOutside) return
+    lastRequest.current = req
     setLoading(true)
     setError(null)
     setExplanation(null)
@@ -123,7 +149,7 @@ export default function App() {
         if (!USE_MOCKS) {
           api
             .explain(r, req.prefs)
-            .then((x) => setExplanation(x.text))
+            .then((x) => setExplanation(x.text.trim() || null))
             .catch(() => {})
         }
       })
@@ -143,11 +169,15 @@ export default function App() {
   const peekSummary = (
     <div className="px-4 pb-3 pt-1">
       {tab === 'help' ? (
-        <p className="min-h-11 py-2 text-sm text-neutral-ink">
+        <p className="min-h-11 py-2 text-sm text-muted">
           Pull up the panel to find water or a cool place nearby.
         </p>
+      ) : endOutside ? (
+        <p role="status" className="min-h-11 rounded-lg bg-lavender px-3 py-2 text-sm font-bold text-ink">
+          {OUTSIDE_MESSAGE}
+        </p>
       ) : route ? (
-        <p className="min-h-11 rounded-lg bg-ice px-3 py-2 text-sm font-bold text-deep">
+        <p className="min-h-11 rounded-lg bg-powder px-3 py-2 text-sm font-bold text-ink">
           {summaryText(route)}
         </p>
       ) : request ? (
@@ -155,26 +185,26 @@ export default function App() {
           type="button"
           disabled={loading}
           onClick={() => findRoute(request)}
-          className="min-h-11 w-full rounded-lg bg-gradient-to-r from-deep to-teal-strong text-base font-bold text-white shadow-card disabled:bg-neutral-ink disabled:bg-none"
+          className="min-h-11 w-full rounded-lg bg-periwinkle border border-cool text-base font-bold text-ink shadow-card disabled:border-sky disabled:bg-sky disabled:text-ink"
         >
           {loading ? 'Finding route…' : 'Find cool route'}
         </button>
       ) : picking ? (
-        <p className="min-h-11 py-2 text-sm font-semibold text-deep">
+        <p className="min-h-11 py-2 text-sm font-semibold text-ink">
           Tap the map to set the {picking}.
         </p>
       ) : null}
     </div>
   )
 
-  const rows: (PlaceResult | Recent)[] = search.query.trim()
-    ? search.results
-    : recents
-
   const pickPlace = (p: PlaceResult | Recent) => {
     const end = { lat: p.lat, lng: p.lng }
+    fromSearch.current = true
     setForm((f) => ({ ...f, end }))
+    fromSearch.current = false
     setLabels((l) => ({ ...l, end: p.name }))
+    setEndOutside(!!p.outsideRoutes)
+    if (p.outsideRoutes) setRoute(null)
     search.setQuery(p.name)
     setSearching(false)
     searchInput.current?.blur()
@@ -222,50 +252,9 @@ export default function App() {
     return first.name
   }
 
-  const onSearchKey = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'ArrowDown' && rows.length) {
-      e.preventDefault()
-      search.setActive((search.active + 1) % rows.length)
-    } else if (e.key === 'ArrowUp' && rows.length) {
-      e.preventDefault()
-      search.setActive((search.active - 1 + rows.length) % rows.length)
-    } else if (e.key === 'Enter' && rows[search.active]) {
-      e.preventDefault()
-      pickPlace(rows[search.active])
-    } else if (e.key === 'Escape') {
-      setSearching(false)
-      searchInput.current?.blur()
-    }
-  }
-
-  const searchField = (
-    <SearchField
-      value={search.query}
-      onChange={(v) => {
-        search.setQuery(v)
-        setSearching(true)
-      }}
-      onFocus={() => {
-        setSearching(true)
-        setSnap('full')
-      }}
-      onKeyDown={onSearchKey}
-      onClear={() => {
-        search.setQuery('')
-        setSearching(true)
-        setSnap('full')
-        searchInput.current?.focus()
-      }}
-      expanded={searching}
-      activeId={searching && rows.length ? optionId(listboxId, search.active) : undefined}
-      listboxId={listboxId}
-      inputRef={searchInput}
-    />
-  )
-
   const tabs = (
     <nav
-      className="flex gap-1 rounded-lg bg-ice p-1"
+      className="flex gap-1 rounded-lg bg-sky p-1"
       aria-label="Screens"
     >
       {(['route', 'help'] as const).map((t) => (
@@ -278,7 +267,7 @@ export default function App() {
             setSearching(false)
           }}
           className={`min-h-11 flex-1 rounded-md text-sm font-bold transition-colors ${
-            tab === t ? 'bg-deep text-white shadow-card' : 'text-deep hover:bg-white'
+            tab === t ? 'bg-periwinkle text-ink shadow-card' : 'text-ink hover:bg-powder'
           }`}
         >
           {t === 'route' ? 'Plan a route' : 'Help now'}
@@ -288,7 +277,7 @@ export default function App() {
   )
 
   return (
-    <div className="relative h-full overflow-hidden bg-mist">
+    <div className="relative h-dvh overflow-hidden bg-mist">
       <div className="absolute inset-0">
         <RouteMap
           start={form.start}
@@ -297,57 +286,59 @@ export default function App() {
           onMapClick={handleMapClick}
           route={tab === 'route' ? route : null}
           resources={tab === 'help' ? resources : []}
-          topPad={HEADER_PX}
+          topPad={TOP_PAD}
           bottomPad={sheetPx}
           focus={focus}
         />
       </div>
 
       <header
-        className="absolute inset-x-2 z-[1200] flex h-11 items-center justify-between gap-2 rounded-lg bg-gradient-to-r from-deep to-teal-strong px-3 text-white shadow-pop"
+        className="absolute inset-x-2 z-[1200] flex h-11 items-center justify-between gap-2 rounded-lg bg-gradient-to-r from-header-from to-header-to px-3 text-ink shadow-pop"
         style={{ top: 'max(0.5rem, env(safe-area-inset-top))' }}
       >
         <div className="flex items-center gap-2">
           <svg width="26" height="26" viewBox="0 0 32 32" aria-hidden="true">
-            <circle cx="16" cy="16" r="15" className="fill-ice" />
-            <circle cx="21" cy="11" r="5" className="fill-amber" />
-            <path d="M4 26c4-9 10-13 24-12v12z" className="fill-deep" opacity="0.85" />
+            <circle cx="16" cy="16" r="15" className="fill-powder" />
+            <circle cx="21" cy="11" r="5" className="fill-sun-strong" />
+            <path d="M4 26c4-9 10-13 24-12v12z" className="fill-cool" opacity="0.85" />
           </svg>
           <h1 className="text-lg font-extrabold">Cool Route</h1>
         </div>
         <div className="flex items-center gap-2">
           <SampleBadge />
-          <span className="text-xs text-ice">API: {apiState}</span>
+          <span className="text-xs text-ink">API: {apiState}</span>
         </div>
       </header>
+
+      <FloatingSearch
+        query={search.query}
+        onQueryChange={search.setQuery}
+        results={search.results}
+        recents={recents}
+        activeIndex={search.active}
+        onActiveChange={search.setActive}
+        open={searching}
+        onOpen={() => setSearching(true)}
+        onClose={() => setSearching(false)}
+        onChoose={pickPlace}
+        onChooseOnMap={() => {
+          setSearching(false)
+          searchInput.current?.blur()
+          startPicking('end')
+        }}
+        inputRef={searchInput}
+      />
 
       <BottomSheet
         snap={snap}
         onSnapChange={setSnap}
         onSettled={setSheetPx}
+        scrollKey={tab}
+        reservedTop={TOP_PAD}
         tabs={tabs}
-        peek={
-          <>
-            {searchField}
-            {peekSummary}
-          </>
-        }
+        peek={peekSummary}
       >
-        {searching ? (
-          <SearchResults
-            query={search.query}
-            results={search.results}
-            recents={recents}
-            activeIndex={search.active}
-            listboxId={listboxId}
-            onChoose={pickPlace}
-            onChooseOnMap={() => {
-              setSearching(false)
-              searchInput.current?.blur()
-              startPicking('end')
-            }}
-          />
-        ) : tab === 'help' ? (
+        {tab === 'help' ? (
           <HelpNow
             resources={resources}
             onResources={(_origin, list) => {
@@ -358,6 +349,7 @@ export default function App() {
           />
         ) : (
           <div className="pt-1">
+            {loading && !route && <RouteSkeleton />}
             {route && (
               <ComparisonCard
                 route={route}
@@ -367,7 +359,7 @@ export default function App() {
                 onShadeChange={(w) =>
                   setForm((f) => ({ ...f, prefs: { ...f.prefs, shade_weight: w } }))
                 }
-                onShadeCommit={() => request && findRoute(request)}
+                onShadeCommit={() => request && !endOutside && findRoute(request)}
               />
             )}
             <AskBox onParsed={applyParsed} onDestination={pickByText} />
@@ -379,15 +371,25 @@ export default function App() {
               onSubmit={findRoute}
               loading={loading}
               labels={labels}
+              notice={endOutside ? OUTSIDE_MESSAGE : undefined}
             />
-            {error && (
-              <p role="alert" className="mt-3 font-medium text-error-ink">
-                {error}
-              </p>
-            )}
           </div>
         )}
       </BottomSheet>
+
+      {error && (
+        <Toast
+          message={error}
+          actionLabel="Retry"
+          bottom={sheetPx}
+          onAction={() => {
+            const req = lastRequest.current
+            setError(null)
+            if (req) findRoute(req)
+          }}
+          onDismiss={() => setError(null)}
+        />
+      )}
     </div>
   )
 }

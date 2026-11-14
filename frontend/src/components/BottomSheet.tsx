@@ -11,7 +11,8 @@ import {
 export type Snap = 'peek' | 'half' | 'full'
 const ORDER: Snap[] = ['peek', 'half', 'full']
 
-const FULL_RATIO = 0.9
+/** Share of the screen at each snap. Full stays below the floating search bar. */
+const FULL_RATIO = 0.82
 const HALF_RATIO = 0.45
 /** Movement (px) before a press becomes a drag, so taps still click. */
 const DRAG_THRESHOLD = 6
@@ -20,16 +21,22 @@ const FLICK_SPEED = 0.35
 /** How far ahead (ms) a release is projected, so a flick carries the sheet. */
 const PROJECT_MS = 200
 const SETTLE_FALLBACK_MS = 320
+/** A sliver of scrollable content stays visible at peek, hinting there is more. */
+const PEEK_CONTENT = 72
 
 interface Props {
   snap: Snap
   onSnapChange: (snap: Snap) => void
   /** Called once the sheet has stopped moving, with its visible height in px. */
   onSettled?: (visiblePx: number) => void
-  /** Segmented control (draggable together with the handle). */
+  /** Segmented control. It sits in the drag zone together with the handle. */
   tabs: ReactNode
-  /** Always-visible block under the tabs: search bar and a one-line summary. */
+  /** Always-visible line under the tabs (route summary, a button, a hint). */
   peek: ReactNode
+  /** Identifies the current screen so each one keeps its own scroll position. */
+  scrollKey: string
+  /** Pixels at the top of the screen the sheet must never cover (header, search bar). */
+  reservedTop: number
   children: ReactNode
 }
 
@@ -37,21 +44,22 @@ interface Drag {
   id: number
   el: HTMLElement
   startY: number
-  startOffset: number
+  startHeight: number
   active: boolean
   samples: { t: number; y: number }[]
-  lastOffset: number
+  lastHeight: number
 }
 
 const clamp = (n: number, lo: number, hi: number) =>
   Math.min(hi, Math.max(lo, n))
 
 /**
- * A bottom sheet with three snap heights. It floats over the map, drags with
- * pointer events (finger or mouse) and snaps using release velocity.
+ * A bottom sheet with three snap heights, floating over the map.
  *
- * It is positioned with a transform on a fixed-height panel, so dragging never
- * relayouts the page, and the map behind it never resizes.
+ * The sheet always has a definite height (peek, half or full, measured from the
+ * dvh-sized screen), laid out as a flex column: a fixed top zone (the only
+ * place that drags the sheet) and a content zone that scrolls on its own at
+ * every height. Dragging inside the content only ever scrolls it.
  */
 export default function BottomSheet({
   snap,
@@ -59,41 +67,55 @@ export default function BottomSheet({
   onSettled,
   tabs,
   peek,
+  scrollKey,
+  reservedTop,
   children,
 }: Props) {
   const sheetRef = useRef<HTMLDivElement>(null)
   const topRef = useRef<HTMLDivElement>(null)
-  const [dims, setDims] = useState({ screen: 0, top: 0 })
-  const [dragOffset, setDragOffset] = useState<number | null>(null)
+  const safeRef = useRef<HTMLDivElement>(null)
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const [dims, setDims] = useState({ screen: 0, top: 0, safe: 0 })
+  const [dragHeight, setDragHeight] = useState<number | null>(null)
   const drag = useRef<Drag | null>(null)
   const justDragged = useRef(false)
 
-  // Measure the screen and the always-visible block (including the safe-area
-  // padding), so the peek height fits its content on any phone and after rotation.
+  // Measure the screen, the always-visible block and the bottom safe area, so the
+  // peek height fits its content on any phone and after rotation.
   useLayoutEffect(() => {
     const parent = sheetRef.current?.parentElement
     const top = topRef.current
-    if (!parent || !top) return
+    const safe = safeRef.current
+    if (!parent || !top || !safe) return
     const read = () =>
       setDims({
         screen: parent.clientHeight,
         top: Math.ceil(top.getBoundingClientRect().height),
+        safe: Math.ceil(safe.getBoundingClientRect().height),
       })
     read()
     const ro = new ResizeObserver(read)
     ro.observe(parent)
     ro.observe(top)
+    ro.observe(safe)
     return () => ro.disconnect()
   }, [])
 
   const measured = dims.screen > 0
-  const full = Math.round(dims.screen * FULL_RATIO)
-  const peekPx = Math.min(dims.top, full - 120)
-  const half = Math.max(Math.round(dims.screen * HALF_RATIO), peekPx + 96)
+  const full = Math.min(
+    Math.round(dims.screen * FULL_RATIO),
+    Math.max(dims.screen - reservedTop, 200),
+  )
+  const peekPx = Math.min(dims.top + dims.safe + PEEK_CONTENT, full - 120)
+  const half = clamp(Math.round(dims.screen * HALF_RATIO), peekPx + 96, full - 48)
   const heights: Record<Snap, number> = { peek: peekPx, half, full }
-  const offsetOf = (s: Snap) => full - heights[s]
-  const offset = dragOffset ?? offsetOf(snap)
-  const maxOffset = full - peekPx
+  const height = dragHeight ?? heights[snap]
+
+  // Each screen keeps its own scroll position.
+  const positions = useRef<Record<string, number>>({})
+  useLayoutEffect(() => {
+    if (scrollRef.current) scrollRef.current.scrollTop = positions.current[scrollKey] ?? 0
+  }, [scrollKey])
 
   // Tell the map once the sheet has stopped, never per frame.
   const onSettledRef = useRef(onSettled)
@@ -114,9 +136,9 @@ export default function BottomSheet({
   const step = (from: Snap, dir: 1 | -1): Snap =>
     ORDER[clamp(ORDER.indexOf(from) + dir, 0, ORDER.length - 1)]
 
-  const nearest = (off: number): Snap =>
+  const nearest = (h: number): Snap =>
     ORDER.reduce((best, s) =>
-      Math.abs(offsetOf(s) - off) < Math.abs(offsetOf(best) - off) ? s : best,
+      Math.abs(heights[s] - h) < Math.abs(heights[best] - h) ? s : best,
     )
 
   const canStart = (e: PointerEvent<HTMLElement>) =>
@@ -139,10 +161,10 @@ export default function BottomSheet({
       id: e.pointerId,
       el: e.currentTarget,
       startY: e.clientY,
-      startOffset: offsetOf(snap),
+      startHeight: heights[snap],
       active: false,
       samples: [{ t: performance.now(), y: e.clientY }],
-      lastOffset: offsetOf(snap),
+      lastHeight: heights[snap],
     }
     const move = (ev: globalThis.PointerEvent) => live.current.move(ev)
     const up = (ev: globalThis.PointerEvent) => live.current.up(ev)
@@ -170,11 +192,12 @@ export default function BottomSheet({
         /* pointer already gone; window listeners still follow it */
       }
     }
-    d.lastOffset = clamp(d.startOffset + dy, 0, maxOffset)
+    // Dragging up (negative dy) makes the sheet taller.
+    d.lastHeight = clamp(d.startHeight - dy, peekPx, full)
     const now = performance.now()
     d.samples.push({ t: now, y: e.clientY })
     while (d.samples.length > 2 && now - d.samples[0].t > 100) d.samples.shift()
-    setDragOffset(d.lastOffset)
+    setDragHeight(d.lastHeight)
   }
 
   const handleUp = (e: globalThis.PointerEvent) => {
@@ -196,11 +219,11 @@ export default function BottomSheet({
     const last = d.samples[d.samples.length - 1]
     const dt = Math.max(1, last.t - first.t)
     const speed = (last.y - first.y) / dt // px/ms, positive = moving down
-    let next = nearest(d.lastOffset + speed * PROJECT_MS)
+    let next = nearest(d.lastHeight - speed * PROJECT_MS)
     if (next === snap && Math.abs(speed) > FLICK_SPEED * 1.5) {
       next = step(snap, speed < 0 ? 1 : -1)
     }
-    setDragOffset(null)
+    setDragHeight(null)
     onSnapChange(next)
   }
 
@@ -226,37 +249,37 @@ export default function BottomSheet({
     }
   }
 
-  const dragHandlers = {
-    onPointerDown: onDown,
-    onClickCapture: swallowClickAfterDrag,
-  }
-
   return (
     <div
       ref={sheetRef}
       role="region"
       aria-label="Route planner"
-      className={`absolute inset-x-0 bottom-0 z-[1100] flex flex-col rounded-t-xl bg-white shadow-sheet will-change-transform ${
-        dragOffset === null
-          ? 'transition-transform duration-[250ms] ease-out motion-reduce:transition-none'
+      className={`absolute inset-x-0 bottom-0 z-[1100] flex flex-col rounded-t-xl bg-white shadow-sheet ${
+        dragHeight === null
+          ? 'transition-[height] duration-[250ms] ease-out motion-reduce:transition-none'
           : ''
       }`}
-      style={{
-        height: full,
-        transform: `translateY(${offset}px)`,
-        visibility: measured ? 'visible' : 'hidden',
-      }}
+      style={{ height, visibility: measured ? 'visible' : 'hidden' }}
       onTransitionEnd={(e) => {
-        if (e.target === e.currentTarget && e.propertyName === 'transform') {
+        if (e.target === e.currentTarget && e.propertyName === 'height') {
           window.clearTimeout(settleTimer.current)
           onSettled?.(target)
         }
       }}
     >
-      <div ref={topRef} className="shrink-0 pb-[env(safe-area-inset-bottom)]">
-        {/* Drag area: the handle and the tabs. */}
+      {/* Probe: reads the bottom safe-area inset (the gesture bar) in px. */}
+      <div
+        ref={safeRef}
+        aria-hidden="true"
+        className="pointer-events-none absolute left-0 top-0 w-0"
+        style={{ height: 'env(safe-area-inset-bottom)' }}
+      />
+
+      <div ref={topRef} className="shrink-0">
+        {/* The only area that drags the sheet: the handle and the tabs. */}
         <div
-          {...dragHandlers}
+          onPointerDown={onDown}
+          onClickCapture={swallowClickAfterDrag}
           className="select-none px-4 pb-2"
           style={{ touchAction: 'none' }}
         >
@@ -275,13 +298,14 @@ export default function BottomSheet({
         {peek}
       </div>
 
-      {/* Content: scrolls only at the full snap; otherwise dragging moves the sheet. */}
+      {/* Content: scrolls on its own at every height; never moves the sheet. */}
       <div
-        {...(snap === 'full' ? {} : dragHandlers)}
-        className={`min-h-0 flex-1 overscroll-contain px-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))] ${
-          snap === 'full' ? 'overflow-y-auto' : 'select-none overflow-hidden'
-        }`}
-        style={{ touchAction: snap === 'full' ? 'pan-y' : 'none' }}
+        ref={scrollRef}
+        onScroll={(e) => {
+          positions.current[scrollKey] = e.currentTarget.scrollTop
+        }}
+        className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))]"
+        style={{ touchAction: 'pan-y', WebkitOverflowScrolling: 'touch' }}
       >
         {children}
       </div>
