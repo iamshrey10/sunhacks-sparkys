@@ -1,4 +1,6 @@
 import type {
+  DirectionsRequest,
+  DirectionsResponse,
   ExplainResponse,
   LatLng,
   ParseResponse,
@@ -6,6 +8,8 @@ import type {
   ResourcesResponse,
   RouteRequest,
   RouteResponse,
+  TrackRequest,
+  TrackResponse,
 } from './types'
 import routeSample from './mocks/route_response.sample.json'
 import resourcesSample from './mocks/resources_response.sample.json'
@@ -57,6 +61,16 @@ export const api = {
     USE_MOCKS
       ? mock<RouteResponse>(routeSample)
       : post<RouteResponse>('/route', req),
+  /** Turn-by-turn steps for a route. Needs the live API (no sample data). */
+  directions: (req: DirectionsRequest) =>
+    USE_MOCKS
+      ? Promise.reject(new ApiError(501, 'Directions need the live API'))
+      : post<DirectionsResponse>('/directions', req),
+  /** Progress along a route for one GPS fix. Needs the live API. */
+  track: (req: TrackRequest) =>
+    USE_MOCKS
+      ? Promise.reject(new ApiError(501, 'Tracking needs the live API'))
+      : post<TrackResponse>('/track', req),
   resources: (center: LatLng, radiusM = 1500) =>
     USE_MOCKS
       ? mock<ResourcesResponse>(resourcesSample)

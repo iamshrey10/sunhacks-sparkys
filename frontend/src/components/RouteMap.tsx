@@ -9,7 +9,7 @@ import {
   useMapEvents,
 } from 'react-leaflet'
 import { COOLEST_TOKEN, FASTEST_TOKEN, token } from '../colors'
-import type { LatLng, Resource, RouteResponse } from '../types'
+import type { LatLng, NearbyPlace, Resource, RouteResponse } from '../types'
 
 // ASU Tempe campus.
 const TEMPE_CENTER: [number, number] = [33.4194, -111.9341]
@@ -27,6 +27,14 @@ interface Props {
   bottomPad: number
   /** Pan here (in the part of the map not covered by the sheet) when it changes. */
   focus?: { point: LatLng; id: number } | null
+  /** Where you are while walking (live GPS). */
+  position?: LatLng | null
+  /** Restaurants, cafes and sights around you while walking. */
+  nearby?: NearbyPlace[]
+  /** Draw only this route, e.g. the one being walked. */
+  only?: 'fastest' | 'coolest' | null
+  /** Keep the map on your position as it changes. */
+  follow?: boolean
 }
 
 /**
@@ -87,6 +95,32 @@ function FocusPoint({
   return null
 }
 
+/**
+ * Keep your position in the visible part of the map while walking. The first fix
+ * zooms in; after that the zoom is left alone so you can still pinch it.
+ */
+function FollowPosition({
+  position,
+  topPad,
+  bottomPad,
+}: {
+  position: LatLng
+  topPad: number
+  bottomPad: number
+}) {
+  const map = useMap()
+  const zoomed = useRef(false)
+  useEffect(() => {
+    const cap = map.getSize().y * 0.6
+    const shift = (Math.min(topPad, cap / 2) - Math.min(bottomPad, cap)) / 2
+    const zoom = zoomed.current ? map.getZoom() : Math.max(map.getZoom(), 17)
+    zoomed.current = true
+    const target = map.project([position.lat, position.lng], zoom).subtract([0, shift])
+    map.setView(map.unproject(target, zoom), zoom, { animate: true })
+  }, [map, position, topPad, bottomPad])
+  return null
+}
+
 /** Re-measure the map once the sheet stops moving (never per frame). */
 function SizeSync({ settledKey }: { settledKey: number }) {
   const map = useMap()
@@ -120,6 +154,10 @@ export default function RouteMap({
   topPad,
   bottomPad,
   focus,
+  position,
+  nearby = [],
+  only = null,
+  follow = false,
 }: Props) {
   return (
     <div
@@ -143,28 +181,36 @@ export default function RouteMap({
         <ClickHandler onMapClick={picking ? onMapClick : () => {}} />
         {route && (
           <>
-            <FitRoute route={route} topPad={topPad} bottomPad={bottomPad} />
-            <Polyline
-              positions={route.fastest.geometry}
-              pathOptions={{ color: token('white'), weight: 8, opacity: 0.9 }}
-            />
-            <Polyline
-              positions={route.fastest.geometry}
-              pathOptions={{
-                color: token(FASTEST_TOKEN),
-                weight: 4,
-                opacity: 1,
-                dashArray: '8 8',
-              }}
-            />
-            <Polyline
-              positions={route.coolest.geometry}
-              pathOptions={{ color: token('white'), weight: 11, opacity: 0.95 }}
-            />
-            <Polyline
-              positions={route.coolest.geometry}
-              pathOptions={{ color: token(COOLEST_TOKEN), weight: 6, opacity: 1 }}
-            />
+            {!follow && <FitRoute route={route} topPad={topPad} bottomPad={bottomPad} />}
+            {only !== 'coolest' && (
+              <>
+                <Polyline
+                  positions={route.fastest.geometry}
+                  pathOptions={{ color: token('white'), weight: 8, opacity: 0.9 }}
+                />
+                <Polyline
+                  positions={route.fastest.geometry}
+                  pathOptions={{
+                    color: token(FASTEST_TOKEN),
+                    weight: 4,
+                    opacity: 1,
+                    dashArray: '8 8',
+                  }}
+                />
+              </>
+            )}
+            {only !== 'fastest' && (
+              <>
+                <Polyline
+                  positions={route.coolest.geometry}
+                  pathOptions={{ color: token('white'), weight: 11, opacity: 0.95 }}
+                />
+                <Polyline
+                  positions={route.coolest.geometry}
+                  pathOptions={{ color: token(COOLEST_TOKEN), weight: 6, opacity: 1 }}
+                />
+              </>
+            )}
           </>
         )}
         {resources.map((r) => (
@@ -183,6 +229,16 @@ export default function RouteMap({
             <Tooltip>{r.name}</Tooltip>
           </CircleMarker>
         ))}
+        {nearby.map((p) => (
+          <CircleMarker
+            key={p.id}
+            center={[p.location.lat, p.location.lng]}
+            radius={7}
+            pathOptions={marker(token('lavender'))}
+          >
+            <Tooltip>{p.name}</Tooltip>
+          </CircleMarker>
+        ))}
         {start && (
           <CircleMarker
             center={[start.lat, start.lng]}
@@ -196,6 +252,23 @@ export default function RouteMap({
             radius={9}
             pathOptions={marker(token('ink'))}
           />
+        )}
+        {position && (
+          <>
+            <CircleMarker
+              center={[position.lat, position.lng]}
+              radius={18}
+              pathOptions={{ stroke: false, fillColor: token('focus'), fillOpacity: 0.2 }}
+            />
+            <CircleMarker
+              center={[position.lat, position.lng]}
+              radius={8}
+              pathOptions={marker(token('focus'))}
+            >
+              <Tooltip>You are here</Tooltip>
+            </CircleMarker>
+            {follow && <FollowPosition position={position} topPad={topPad} bottomPad={bottomPad} />}
+          </>
         )}
       </MapContainer>
     </div>
