@@ -153,6 +153,11 @@ export default function RouteForm({
         </div>
       </fieldset>
 
+      {!request && (
+        <p className="text-sm text-muted">
+          Set a start and an end to find a route.
+        </p>
+      )}
       <button
         type="submit"
         disabled={!request || loading}
@@ -160,11 +165,6 @@ export default function RouteForm({
       >
         {loading ? 'Finding route…' : 'Find cool route'}
       </button>
-      {!request && (
-        <p className="text-sm text-muted">
-          Set a start and an end to find a route.
-        </p>
-      )}
     </form>
   )
 }

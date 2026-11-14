@@ -288,7 +288,7 @@ export default function App() {
   )
 
   return (
-    <div className="relative h-full overflow-hidden bg-mist">
+    <div className="relative h-dvh overflow-hidden bg-mist">
       <div className="absolute inset-0">
         <RouteMap
           start={form.start}
@@ -325,6 +325,7 @@ export default function App() {
         snap={snap}
         onSnapChange={setSnap}
         onSettled={setSheetPx}
+        scrollKey={searching ? 'search' : tab}
         tabs={tabs}
         peek={
           <>
