@@ -79,7 +79,7 @@ Input `ExplainRequest` (a `RouteResponse` plus preferences), output `ExplainResp
 
 **Task 4 (about 30 min): errors.**
 Missing key, timeout and rate limit must raise a clear error that the API can
-turn into a `502`. Routing must never crash because Gemini failed.
+turn into a `502`: `from backend.api.errors import UpstreamError` and `raise UpstreamError("short safe message")`. The handler already exists in `main.py`. Routing must never crash because Gemini failed.
 
 **Task 5 (about 45 min): tests in `backend/tests/test_ai.py`.**
 Mock the Gemini client so tests run with no key and no network. `pytest backend/tests` must pass.

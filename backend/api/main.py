@@ -1,8 +1,10 @@
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from backend.ai import service as ai
 from backend.api.config import get_settings
+from backend.api.errors import UpstreamError
 from backend.api.schemas import (
     ExplainRequest,
     ExplainResponse,
@@ -26,6 +28,14 @@ app.add_middleware(
     allow_methods=["GET", "POST"],
     allow_headers=["Content-Type"],
 )
+
+
+@app.exception_handler(UpstreamError)
+async def upstream_error_handler(_: Request, exc: UpstreamError) -> JSONResponse:
+    return JSONResponse(
+        status_code=502,
+        content={"detail": str(exc) or "An upstream service failed"},
+    )
 
 
 def _not_ready(exc: NotImplementedError) -> HTTPException:

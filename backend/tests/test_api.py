@@ -17,8 +17,22 @@ def test_health():
     assert r.json()["status"] == "ok"
 
 
-def test_unimplemented_endpoints_say_so_instead_of_faking():
-    assert client.post("/parse", json={"text": "3 PM avoid stairs"}).status_code == 501
+def test_parse_and_explain_validate_input():
+    assert client.post("/parse", json={"text": ""}).status_code == 422
+    assert client.post("/explain", json={}).status_code == 422
+
+
+def test_upstream_failure_becomes_502(monkeypatch):
+    from backend.ai import service as ai
+    from backend.api.errors import UpstreamError
+
+    def boom(_req):
+        raise UpstreamError("Gemini is unavailable")
+
+    monkeypatch.setattr(ai, "parse_request", boom)
+    r = client.post("/parse", json={"text": "3 PM avoid stairs"})
+    assert r.status_code == 502
+    assert r.json()["detail"] == "Gemini is unavailable"
 
 
 def test_resources_returns_sourced_items_sorted_by_distance():

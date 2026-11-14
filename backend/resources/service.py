@@ -100,7 +100,11 @@ def _osm() -> list[tuple[Resource, float, float]]:
                     kind=kind,
                     location=LatLng(lat=e["lat"], lng=e["lng"]),
                     open_now=None,  # OSM does not tell us whether it is usable right now
-                    hours_text=e.get("opening_hours"),
+                    hours_text=(
+                        f"Listed on OpenStreetMap, not verified: {e['opening_hours']}"
+                        if e.get("opening_hours")
+                        else None
+                    ),
                     source_url=f"https://www.openstreetmap.org/{e['type']}/{e['id']}",
                     last_checked=datetime.fromisoformat(fetched) if fetched else None,
                 ),
