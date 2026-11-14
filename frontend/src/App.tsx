@@ -1,6 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react'
 import { api, USE_MOCKS } from './api'
 import AskBox from './components/AskBox'
+import SearchField from './components/SearchField'
+import SearchResults from './components/SearchResults'
+import { useRecents, type Recent } from './hooks/useRecents'
+import { useSearch } from './hooks/useSearch'
+import { optionId, searchPlaces, type PlaceResult } from './search'
 import HelpNow from './components/HelpNow'
 import RouteForm from './components/RouteForm'
 import { DEFAULT_TIME, buildRequest, type FormValue, type PickTarget } from './form'
@@ -39,6 +44,9 @@ export default function App() {
     const next = typeof update === 'function' ? update(form) : update
     setTrip({ start: next.start, end: next.end, departTime: next.departTime })
     setPrefs(next.prefs)
+    // A point that changed by hand no longer has the searched place's name.
+    if (next.start !== form.start) setLabels((l) => ({ ...l, start: undefined }))
+    if (next.end !== form.end) setLabels((l) => ({ ...l, end: undefined }))
   }
   const [picking, setPicking] = useState<PickTarget | null>(null)
   const [snap, setSnap] = useState<Snap>('half')
@@ -46,6 +54,14 @@ export default function App() {
   const [sheetPx, setSheetPx] = useState(0)
   const [tab, setTab] = useState<'route' | 'help'>('route')
   const [resources, setResources] = useState<Resource[]>([])
+  const search = useSearch(resources)
+  const [recents, addRecent] = useRecents()
+  const [searching, setSearching] = useState(false)
+  const [focus, setFocus] = useState<{ point: LatLng; id: number } | null>(null)
+  // Friendly names for points chosen by search or location, instead of coordinates.
+  const [labels, setLabels] = useState<Partial<Record<PickTarget, string>>>({})
+  const searchInput = useRef<HTMLInputElement>(null)
+  const listboxId = useId()
   const [route, setRoute] = useState<RouteResponse | null>(null)
   const [explanation, setExplanation] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -143,14 +159,108 @@ export default function App() {
         >
           {loading ? 'Finding route…' : 'Find cool route'}
         </button>
-      ) : (
-        <p className="min-h-11 py-2 text-sm text-neutral-ink">
-          {picking
-            ? `Tap the map to set the ${picking}.`
-            : 'Set a start and an end to find a route.'}
+      ) : picking ? (
+        <p className="min-h-11 py-2 text-sm font-semibold text-deep">
+          Tap the map to set the {picking}.
         </p>
-      )}
+      ) : null}
     </div>
+  )
+
+  const rows: (PlaceResult | Recent)[] = search.query.trim()
+    ? search.results
+    : recents
+
+  const pickPlace = (p: PlaceResult | Recent) => {
+    const end = { lat: p.lat, lng: p.lng }
+    setForm((f) => ({ ...f, end }))
+    setLabels((l) => ({ ...l, end: p.name }))
+    search.setQuery(p.name)
+    setSearching(false)
+    searchInput.current?.blur()
+    setPicking(null)
+    setTab('route')
+    setSnap('half')
+    setFocus((f) => ({ point: end, id: (f?.id ?? 0) + 1 }))
+    addRecent({
+      id: p.id,
+      name: p.name,
+      kind: p.kind,
+      lat: p.lat,
+      lng: p.lng,
+      outsideRoutes: p.outsideRoutes,
+    })
+    // Start from "my location" when the device already allows it; otherwise keep
+    // whatever start is set.
+    if (!form.start) fillStartFromLocation()
+  }
+
+  /** Never prompts: only uses the location when permission was already granted. */
+  const fillStartFromLocation = async () => {
+    try {
+      const perm = await navigator.permissions?.query({ name: 'geolocation' })
+      if (perm?.state !== 'granted') return
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const start = { lat: pos.coords.latitude, lng: pos.coords.longitude }
+          setTrip((t) => (t.start ? t : { ...t, start }))
+          setLabels((l) => (l.start ? l : { ...l, start: 'My location' }))
+        },
+        () => {},
+        { timeout: 5000 },
+      )
+    } catch {
+      /* no location: the person sets the start themselves */
+    }
+  }
+
+  /** For the plain-English box: use the first match for a spoken destination. */
+  const pickByText = async (text: string) => {
+    const [first] = await searchPlaces(text, { resources })
+    if (!first) return null
+    pickPlace(first)
+    return first.name
+  }
+
+  const onSearchKey = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'ArrowDown' && rows.length) {
+      e.preventDefault()
+      search.setActive((search.active + 1) % rows.length)
+    } else if (e.key === 'ArrowUp' && rows.length) {
+      e.preventDefault()
+      search.setActive((search.active - 1 + rows.length) % rows.length)
+    } else if (e.key === 'Enter' && rows[search.active]) {
+      e.preventDefault()
+      pickPlace(rows[search.active])
+    } else if (e.key === 'Escape') {
+      setSearching(false)
+      searchInput.current?.blur()
+    }
+  }
+
+  const searchField = (
+    <SearchField
+      value={search.query}
+      onChange={(v) => {
+        search.setQuery(v)
+        setSearching(true)
+      }}
+      onFocus={() => {
+        setSearching(true)
+        setSnap('full')
+      }}
+      onKeyDown={onSearchKey}
+      onClear={() => {
+        search.setQuery('')
+        setSearching(true)
+        setSnap('full')
+        searchInput.current?.focus()
+      }}
+      expanded={searching}
+      activeId={searching && rows.length ? optionId(listboxId, search.active) : undefined}
+      listboxId={listboxId}
+      inputRef={searchInput}
+    />
   )
 
   const tabs = (
@@ -163,7 +273,10 @@ export default function App() {
           key={t}
           type="button"
           aria-pressed={tab === t}
-          onClick={() => setTab(t)}
+          onClick={() => {
+            setTab(t)
+            setSearching(false)
+          }}
           className={`min-h-11 flex-1 rounded-md text-sm font-bold transition-colors ${
             tab === t ? 'bg-deep text-white shadow-card' : 'text-deep hover:bg-white'
           }`}
@@ -186,6 +299,7 @@ export default function App() {
           resources={tab === 'help' ? resources : []}
           topPad={HEADER_PX}
           bottomPad={sheetPx}
+          focus={focus}
         />
       </div>
 
@@ -212,9 +326,28 @@ export default function App() {
         onSnapChange={setSnap}
         onSettled={setSheetPx}
         tabs={tabs}
-        peek={peekSummary}
+        peek={
+          <>
+            {searchField}
+            {peekSummary}
+          </>
+        }
       >
-        {tab === 'help' ? (
+        {searching ? (
+          <SearchResults
+            query={search.query}
+            results={search.results}
+            recents={recents}
+            activeIndex={search.active}
+            listboxId={listboxId}
+            onChoose={pickPlace}
+            onChooseOnMap={() => {
+              setSearching(false)
+              searchInput.current?.blur()
+              startPicking('end')
+            }}
+          />
+        ) : tab === 'help' ? (
           <HelpNow
             resources={resources}
             onResources={(_origin, list) => {
@@ -237,7 +370,7 @@ export default function App() {
                 onShadeCommit={() => request && findRoute(request)}
               />
             )}
-            <AskBox onParsed={applyParsed} />
+            <AskBox onParsed={applyParsed} onDestination={pickByText} />
             <RouteForm
               value={form}
               onChange={setForm}
@@ -245,6 +378,7 @@ export default function App() {
               onPick={startPicking}
               onSubmit={findRoute}
               loading={loading}
+              labels={labels}
             />
             {error && (
               <p role="alert" className="mt-3 font-medium text-error-ink">

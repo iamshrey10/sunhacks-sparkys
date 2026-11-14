@@ -14,6 +14,8 @@ interface Props {
   onPick: (target: PickTarget | null) => void
   onSubmit: (req: RouteRequest) => void
   loading: boolean
+  /** Friendly names for a point (e.g. a searched place), shown instead of coordinates. */
+  labels?: Partial<Record<PickTarget, string>>
 }
 
 const SENSITIVITY: Prefs['heat_sensitivity'][] = ['low', 'normal', 'high']
@@ -31,6 +33,7 @@ export default function RouteForm({
   onPick,
   onSubmit,
   loading,
+  labels,
 }: Props) {
   const [geoError, setGeoError] = useState<string | null>(null)
   const request = buildRequest(value)
@@ -59,7 +62,7 @@ export default function RouteForm({
     <div className="rounded-lg border border-line bg-ice p-3 shadow-card">
       <div className="flex items-baseline justify-between">
         <span className="font-semibold">{label}</span>
-        <span className="text-sm text-neutral-ink">{fmt(value[target])}</span>
+        <span className="text-sm text-neutral-ink">{labels?.[target] ?? fmt(value[target])}</span>
       </div>
       <div className="mt-2 flex gap-2">
         <button

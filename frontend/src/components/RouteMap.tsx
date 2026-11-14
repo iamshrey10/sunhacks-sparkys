@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import {
   CircleMarker,
   MapContainer,
@@ -25,6 +25,8 @@ interface Props {
   /** Pixels at the top (header) and bottom (sheet) that cover the map. */
   topPad: number
   bottomPad: number
+  /** Pan here (in the part of the map not covered by the sheet) when it changes. */
+  focus?: { point: LatLng; id: number } | null
 }
 
 /**
@@ -51,6 +53,37 @@ function FitRoute({
       paddingBottomRight: [24, Math.min(bottomPad, cap) + 16],
     })
   }, [map, route, topPad, bottomPad])
+  return null
+}
+
+/**
+ * Centre a chosen point in the visible part of the map. Re-applies while the
+ * sheet is still settling after the choice, then leaves the map alone.
+ */
+function FocusPoint({
+  focus,
+  topPad,
+  bottomPad,
+}: {
+  focus: { point: LatLng; id: number }
+  topPad: number
+  bottomPad: number
+}) {
+  const map = useMap()
+  const since = useRef(0)
+  useEffect(() => {
+    since.current = Date.now()
+  }, [focus.id])
+  useEffect(() => {
+    if (Date.now() - since.current > 1500) return
+    const cap = map.getSize().y * 0.6
+    const shift = (Math.min(topPad, cap / 2) - Math.min(bottomPad, cap)) / 2
+    const zoom = Math.max(map.getZoom(), 16)
+    const target = map
+      .project([focus.point.lat, focus.point.lng], zoom)
+      .subtract([0, shift])
+    map.setView(map.unproject(target, zoom), zoom)
+  }, [map, focus, topPad, bottomPad])
   return null
 }
 
@@ -86,6 +119,7 @@ export default function RouteMap({
   resources = [],
   topPad,
   bottomPad,
+  focus,
 }: Props) {
   return (
     <div
@@ -105,6 +139,7 @@ export default function RouteMap({
           url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         <SizeSync settledKey={bottomPad} />
+        {focus && <FocusPoint focus={focus} topPad={topPad} bottomPad={bottomPad} />}
         <ClickHandler onMapClick={picking ? onMapClick : () => {}} />
         {route && (
           <>

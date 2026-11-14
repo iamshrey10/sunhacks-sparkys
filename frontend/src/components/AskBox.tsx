@@ -4,9 +4,11 @@ import type { ParseResponse } from '../types'
 
 interface Props {
   onParsed: (parsed: ParseResponse) => void
+  /** Look up a destination the person mentioned; returns the place name, or null. */
+  onDestination: (text: string) => Promise<string | null>
 }
 
-export default function AskBox({ onParsed }: Props) {
+export default function AskBox({ onParsed, onDestination }: Props) {
   const [text, setText] = useState('')
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(
@@ -21,11 +23,16 @@ export default function AskBox({ onParsed }: Props) {
     try {
       const parsed = await api.parse(text.trim())
       onParsed(parsed)
+      const found = parsed.destination_text
+        ? await onDestination(parsed.destination_text)
+        : null
       setMessage({
         ok: true,
-        text: parsed.destination_text
-          ? `Filled in the form. You mentioned "${parsed.destination_text}": tap it on the map to set your end point.`
-          : 'Filled in the form below. Check it, then find your route.',
+        text: found
+          ? `Filled in the form and set your end point to ${found}.`
+          : parsed.destination_text
+            ? `Filled in the form. We could not find "${parsed.destination_text}": search for it above or tap the map to set your end point.`
+            : 'Filled in the form below. Check it, then find your route.',
       })
     } catch (err) {
       const unavailable =
