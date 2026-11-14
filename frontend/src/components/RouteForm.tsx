@@ -17,9 +17,9 @@ interface Props {
 }
 
 const SENSITIVITY: Prefs['heat_sensitivity'][] = ['low', 'normal', 'high']
-const btn = 'min-h-11 rounded-lg border-2 border-sky-900 px-3 text-sm font-semibold '
-const btnIdle = btn + 'bg-white text-sky-950'
-const btnOn = btn + 'bg-sky-900 text-white'
+const btn = 'min-h-11 rounded-md border-2 border-deep px-3 text-sm font-semibold '
+const btnIdle = btn + 'bg-white text-deep'
+const btnOn = btn + 'bg-deep text-white'
 
 const fmt = (p: LatLng | null) =>
   p ? `${p.lat.toFixed(4)}, ${p.lng.toFixed(4)}` : 'Not set'
@@ -56,10 +56,10 @@ export default function RouteForm({
   }
 
   const pointRow = (target: PickTarget, label: string) => (
-    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3 shadow-sm">
+    <div className="rounded-lg border border-line bg-ice p-3 shadow-card">
       <div className="flex items-baseline justify-between">
         <span className="font-semibold">{label}</span>
-        <span className="text-sm text-slate-700">{fmt(value[target])}</span>
+        <span className="text-sm text-neutral-ink">{fmt(value[target])}</span>
       </div>
       <div className="mt-2 flex gap-2">
         <button
@@ -92,7 +92,7 @@ export default function RouteForm({
       {pointRow('start', 'Start')}
       {pointRow('end', 'End')}
       {geoError && (
-        <p role="alert" className="text-sm font-medium text-red-800">
+        <p role="alert" className="text-sm font-medium text-error-ink">
           {geoError}
         </p>
       )}
@@ -109,7 +109,7 @@ export default function RouteForm({
           onChange={(e) =>
             onChange({ ...value, departTime: e.target.value || DEFAULT_TIME })
           }
-          className="min-h-11 rounded-lg border-2 border-sky-900 bg-white px-3 text-base"
+          className="min-h-11 rounded-md border-2 border-neutral bg-white px-3 text-base"
         />
       </div>
 
@@ -117,7 +117,7 @@ export default function RouteForm({
         Avoid stairs
         <input
           type="checkbox"
-          className="h-6 w-6 accent-sky-900"
+          className="h-6 w-6 accent-deep"
           checked={value.prefs.avoid_stairs}
           onChange={(e) =>
             onChange({
@@ -153,12 +153,12 @@ export default function RouteForm({
       <button
         type="submit"
         disabled={!request || loading}
-        className="min-h-12 w-full rounded-xl bg-gradient-to-r from-sky-900 to-teal-700 shadow-md text-base font-bold text-white disabled:bg-slate-500"
+        className="min-h-12 w-full rounded-lg bg-gradient-to-r from-deep to-teal-strong text-base font-bold text-white shadow-card disabled:bg-neutral-ink disabled:bg-none"
       >
         {loading ? 'Finding route…' : 'Find cool route'}
       </button>
       {!request && (
-        <p className="text-sm text-slate-700">
+        <p className="text-sm text-neutral-ink">
           Set a start and an end to find a route.
         </p>
       )}

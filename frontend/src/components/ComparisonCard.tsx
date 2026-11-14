@@ -1,5 +1,5 @@
 import type { RouteOption, RouteResponse } from '../types'
-import { COOLEST_COLOR, FASTEST_COLOR } from '../colors'
+import { COOLEST_TOKEN, FASTEST_TOKEN, token } from '../colors'
 
 interface Props {
   route: RouteResponse
@@ -25,21 +25,20 @@ function Column({
 }) {
   return (
     <div
-      className="flex-1 rounded-2xl border border-slate-200 bg-slate-50 p-3 shadow-sm"
+      className="flex-1 rounded-lg border border-line bg-white p-3 shadow-card"
       style={{ borderTop: `5px solid ${color}` }}
     >
       <div className="font-bold">{label}</div>
-      <div className="mt-1 text-3xl font-extrabold text-sky-950">
+      <div className="mt-1 text-3xl font-extrabold text-ink">
         {Math.round(option.shade_pct)}
         <span className="text-base font-bold">% shade</span>
       </div>
       <div
-        className="mt-1 h-2 overflow-hidden rounded-full bg-amber-200"
+        className="mt-1 h-2 overflow-hidden rounded-full bg-amber"
         aria-hidden="true"
       >
         <div
-          className="h-full rounded-full"
-          style={{ width: `${Math.round(option.shade_pct)}%`, background: color }}
+          className="h-full rounded-full bg-aqua" style={{ width: `${Math.round(option.shade_pct)}%` }}
         />
       </div>
       <dl className="mt-2 text-sm">
@@ -72,12 +71,12 @@ export default function ComparisonCard({
 
   return (
     <section aria-label="Route comparison" className="mb-3 space-y-2">
-      <p className="rounded-xl bg-sky-100 px-3 py-2 text-base font-bold text-sky-950">
+      <p className="rounded-lg bg-ice px-3 py-2 text-base font-bold text-deep">
         Coolest route: {extraText}, {sunSaved} min less in the sun
       </p>
       <div className="flex gap-2">
-        <Column option={fastest} label="Fastest" color={FASTEST_COLOR} />
-        <Column option={coolest} label="Coolest" color={COOLEST_COLOR} />
+        <Column option={fastest} label="Fastest" color={token(FASTEST_TOKEN)} />
+        <Column option={coolest} label="Coolest" color={token(COOLEST_TOKEN)} />
       </div>
       {explanation && <p className="text-sm">{explanation}</p>}
       {coolest.stairs_count > 0 && (
@@ -86,7 +85,7 @@ export default function ComparisonCard({
       <div>
         <label htmlFor="shade-weight" className="flex justify-between font-semibold">
           <span>Shade vs speed</span>
-          <span className="text-sm text-slate-700">
+          <span className="text-sm text-neutral-ink">
             {loading ? 'Updating…' : `${Math.round(shadeWeight * 100)}% shade`}
           </span>
         </label>
@@ -100,9 +99,9 @@ export default function ComparisonCard({
           onChange={(e) => onShadeChange(Number(e.target.value))}
           onPointerUp={onShadeCommit}
           onKeyUp={onShadeCommit}
-          className="h-11 w-full accent-sky-900"
+          className="h-11 w-full accent-deep"
         />
-        <div className="flex justify-between text-xs text-slate-700">
+        <div className="flex justify-between text-xs text-neutral-ink">
           <span>Fastest</span>
           <span>Coolest</span>
         </div>

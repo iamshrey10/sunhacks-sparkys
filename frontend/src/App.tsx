@@ -110,26 +110,26 @@ export default function App() {
 
   return (
     <div className="flex h-full flex-col">
-      <header className="bg-gradient-to-br from-sky-950 via-sky-900 to-teal-800 px-4 pb-4 pt-3 text-white">
+      <header className="bg-gradient-to-br from-deep to-teal-strong px-4 pb-4 pt-3 text-white">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true">
-              <circle cx="16" cy="16" r="15" fill="#e0f2fe" />
-              <circle cx="21" cy="11" r="5" fill="#f59e0b" />
-              <path d="M4 26c4-9 10-13 24-12v12z" fill="#0c4a6e" opacity="0.85" />
+              <circle cx="16" cy="16" r="15" className="fill-ice" />
+              <circle cx="21" cy="11" r="5" className="fill-amber" />
+              <path d="M4 26c4-9 10-13 24-12v12z" className="fill-deep" opacity="0.85" />
             </svg>
             <div>
               <h1 className="text-lg font-extrabold leading-tight">Cool Route</h1>
-              <p className="text-xs text-sky-100">The shadiest way to walk Tempe</p>
+              <p className="text-xs text-ice">The shadiest way to walk Tempe</p>
             </div>
           </div>
           <div className="flex flex-col items-end gap-1">
             <SampleBadge />
-            <span className="text-xs text-sky-100">API: {apiState}</span>
+            <span className="text-xs text-ice">API: {apiState}</span>
           </div>
         </div>
         <nav
-          className="mt-3 flex gap-1 rounded-xl bg-sky-950/60 p-1"
+          className="mt-3 flex gap-1 rounded-lg bg-ink/40 p-1"
           aria-label="Screens"
         >
           {(['route', 'help'] as const).map((t) => (
@@ -138,10 +138,10 @@ export default function App() {
               type="button"
               aria-pressed={tab === t}
               onClick={() => setTab(t)}
-              className={`min-h-11 flex-1 rounded-lg text-sm font-bold transition-colors ${
+              className={`min-h-11 flex-1 rounded-md text-sm font-bold transition-colors ${
                 tab === t
-                  ? 'bg-white text-sky-950 shadow'
-                  : 'text-sky-100 hover:bg-sky-800'
+                  ? 'bg-white text-deep shadow-card'
+                  : 'text-ice hover:bg-deep'
               }`}
             >
               {t === 'route' ? 'Plan a route' : 'Help now'}
@@ -161,9 +161,9 @@ export default function App() {
       </main>
       <section
         ref={panelRef}
-        className="relative z-[1100] max-h-[55%] overflow-y-auto rounded-t-3xl bg-white px-4 pb-6 pt-2 text-slate-900 shadow-[0_-6px_20px_rgba(12,74,110,0.3)]"
+        className="relative z-[1100] max-h-[55%] overflow-y-auto rounded-t-xl bg-white px-4 pb-6 pt-2 text-ink shadow-sheet"
       >
-        <div className="mx-auto mb-3 h-1.5 w-10 rounded-full bg-slate-300" />
+        <div className="mx-auto mb-3 h-1.5 w-10 rounded-full bg-line" />
         {tab === 'help' ? (
           <HelpNow
             resources={resources}
@@ -194,7 +194,7 @@ export default function App() {
           loading={loading}
         />
         {error && (
-          <p role="alert" className="mt-3 font-medium text-red-800">
+          <p role="alert" className="mt-3 font-medium text-error-ink">
             {error}
           </p>
         )}

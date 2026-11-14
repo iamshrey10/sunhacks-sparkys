@@ -53,12 +53,12 @@ export default function AskBox({ onParsed }: Props) {
           value={text}
           onChange={(e) => setText(e.target.value)}
           placeholder="e.g. 3 PM, avoid stairs"
-          className="min-h-11 min-w-0 flex-1 rounded-lg border-2 border-sky-900 bg-white px-3 text-base"
+          className="min-h-11 min-w-0 flex-1 rounded-md border-2 border-neutral bg-white px-3 text-base"
         />
         <button
           type="submit"
           disabled={busy || !text.trim()}
-          className="min-h-11 rounded-lg bg-sky-900 px-4 font-bold text-white disabled:bg-slate-500"
+          className="min-h-11 rounded-md bg-deep px-4 font-bold text-white disabled:bg-neutral-ink"
         >
           {busy ? 'Reading…' : 'Fill form'}
         </button>
@@ -66,7 +66,7 @@ export default function AskBox({ onParsed }: Props) {
       {message && (
         <p
           role={message.ok ? 'status' : 'alert'}
-          className={`mt-1 text-sm font-medium ${message.ok ? 'text-slate-800' : 'text-red-800'}`}
+          className={`mt-1 text-sm font-medium ${message.ok ? 'text-ink' : 'text-error-ink'}`}
         >
           {message.text}
         </p>

@@ -23,9 +23,9 @@ const KIND_LABEL: Record<Resource['kind'], string> = {
 }
 
 function openBadge(open: boolean | null) {
-  if (open === true) return { text: 'Open now', cls: 'bg-emerald-800 text-white' }
-  if (open === false) return { text: 'Closed', cls: 'bg-slate-700 text-white' }
-  return { text: 'Hours unknown', cls: 'bg-amber-200 text-slate-900' }
+  if (open === true) return { text: 'Open now', cls: 'bg-teal-strong text-white' }
+  if (open === false) return { text: 'Closed', cls: 'bg-neutral-ink text-white' }
+  return { text: 'Hours unknown', cls: 'bg-amber text-ink' }
 }
 
 const getPosition = () =>
@@ -76,7 +76,7 @@ export default function HelpNow({ onResources, resources, onWalk }: Props) {
         type="button"
         onClick={find}
         disabled={busy}
-        className="min-h-16 w-full rounded-2xl bg-gradient-to-r from-sky-900 to-teal-700 shadow-md text-lg font-bold text-white disabled:bg-slate-500"
+        className="min-h-16 w-full rounded-lg bg-gradient-to-r from-deep to-teal-strong text-lg font-bold text-white shadow-card disabled:bg-neutral-ink disabled:bg-none"
       >
         {status === 'locating'
           ? 'Finding your location…'
@@ -86,13 +86,13 @@ export default function HelpNow({ onResources, resources, onWalk }: Props) {
       </button>
 
       {status === 'done' && usedFallback && (
-        <p role="status" className="text-sm font-medium text-slate-800">
+        <p role="status" className="text-sm font-medium text-ink">
           We could not get your location, so results are near the ASU Tempe
           campus center.
         </p>
       )}
       {status === 'error' && (
-        <p role="alert" className="font-medium text-red-800">
+        <p role="alert" className="font-medium text-error-ink">
           We could not load nearby spots right now. Please try again.
         </p>
       )}
@@ -104,27 +104,27 @@ export default function HelpNow({ onResources, resources, onWalk }: Props) {
         {resources.map((r) => {
           const badge = openBadge(r.open_now)
           return (
-            <li key={r.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-3 shadow-sm">
+            <li key={r.id} className="rounded-lg border border-line bg-white p-3 shadow-card">
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <p className="font-bold">{r.name}</p>
-                  <p className="text-sm text-slate-700">
+                  <p className="text-sm text-neutral-ink">
                     {KIND_LABEL[r.kind]}
                     {r.distance_m != null && ` · ${Math.round(r.distance_m)} m away`}
                   </p>
                 </div>
                 <span
-                  className={`shrink-0 rounded px-2 py-1 text-xs font-bold ${badge.cls}`}
+                  className={`shrink-0 rounded-md px-2 py-1 text-xs font-bold ${badge.cls}`}
                 >
                   {badge.text}
                 </span>
               </div>
               {r.hours_text && (
-                <p className="mt-1 text-sm text-slate-700">{r.hours_text}</p>
+                <p className="mt-1 text-sm text-neutral-ink">{r.hours_text}</p>
               )}
               <button
                 type="button"
-                className="mt-2 min-h-11 w-full rounded-lg border-2 border-sky-900 font-semibold text-sky-950"
+                className="mt-2 min-h-11 w-full rounded-md border-2 border-deep font-semibold text-deep"
                 onClick={() => origin && onWalk(origin, r)}
               >
                 Show walking route

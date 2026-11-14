@@ -8,7 +8,7 @@ import {
   useMap,
   useMapEvents,
 } from 'react-leaflet'
-import { COOLEST_COLOR, FASTEST_COLOR } from '../colors'
+import { COOLEST_TOKEN, FASTEST_TOKEN, token } from '../colors'
 import type { LatLng, Resource, RouteResponse } from '../types'
 
 // ASU Tempe campus.
@@ -42,7 +42,7 @@ function ClickHandler({ onMapClick }: Pick<Props, 'onMapClick'>) {
 }
 
 const marker = (fillColor: string) => ({
-  color: '#ffffff',
+  color: token('white'),
   weight: 3,
   fillColor,
   fillOpacity: 1,
@@ -77,11 +77,24 @@ export default function RouteMap({
             <FitRoute route={route} />
             <Polyline
               positions={route.fastest.geometry}
-              pathOptions={{ color: FASTEST_COLOR, weight: 5, opacity: 0.9 }}
+              pathOptions={{ color: token('white'), weight: 8, opacity: 0.9 }}
+            />
+            <Polyline
+              positions={route.fastest.geometry}
+              pathOptions={{
+                color: token(FASTEST_TOKEN),
+                weight: 4,
+                opacity: 1,
+                dashArray: '8 8',
+              }}
             />
             <Polyline
               positions={route.coolest.geometry}
-              pathOptions={{ color: COOLEST_COLOR, weight: 7, opacity: 0.95 }}
+              pathOptions={{ color: token('white'), weight: 11, opacity: 0.95 }}
+            />
+            <Polyline
+              positions={route.coolest.geometry}
+              pathOptions={{ color: token(COOLEST_TOKEN), weight: 6, opacity: 1 }}
             />
           </>
         )}
@@ -91,7 +104,11 @@ export default function RouteMap({
             center={[r.location.lat, r.location.lng]}
             radius={10}
             pathOptions={marker(
-              r.open_now === true ? '#047857' : r.open_now === false ? '#475569' : '#d97706',
+              r.open_now === true
+                ? token('teal-strong')
+                : r.open_now === false
+                  ? token('neutral-ink')
+                  : token('amber'),
             )}
           >
             <Tooltip>{r.name}</Tooltip>
@@ -101,14 +118,14 @@ export default function RouteMap({
           <CircleMarker
             center={[start.lat, start.lng]}
             radius={9}
-            pathOptions={marker('#15803d')}
+            pathOptions={marker(token('aqua'))}
           />
         )}
         {end && (
           <CircleMarker
             center={[end.lat, end.lng]}
             radius={9}
-            pathOptions={marker('#b91c1c')}
+            pathOptions={marker(token('deep'))}
           />
         )}
       </MapContainer>

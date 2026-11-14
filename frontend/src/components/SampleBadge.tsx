@@ -6,7 +6,7 @@ export default function SampleBadge() {
   return (
     <span
       role="status"
-      className="rounded bg-amber-300 px-2 py-1 text-xs font-bold tracking-wide text-slate-900"
+      className="rounded-md bg-amber px-2 py-1 text-xs font-bold tracking-wide text-ink"
     >
       SAMPLE DATA
     </span>
