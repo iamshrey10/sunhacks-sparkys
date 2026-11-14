@@ -1,0 +1,5 @@
+{
+  "appId": "com.sparkys.coolroute",
+  "appName": "Cool Route",
+  "webDir": "../frontend/dist"
+}
