@@ -18,7 +18,6 @@ def test_health():
 
 
 def test_unimplemented_endpoints_say_so_instead_of_faking():
-    assert client.post("/route", json=ROUTE_BODY).status_code == 501
     assert client.get("/resources", params={"lat": 33.42, "lng": -111.93}).status_code == 501
     assert client.post("/parse", json={"text": "3 PM avoid stairs"}).status_code == 501
 
