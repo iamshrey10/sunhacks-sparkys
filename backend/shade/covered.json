@@ -1,0 +1,10 @@
+{
+  "_readme": [
+    "Hand-labelled covered walkways on the demo corridor (arcades, breezeways, solar canopies).",
+    "Each entry is a polyline of [lat, lng] points along the covered stretch.",
+    "Sample points within buffer_m metres of the line get at least `shade` (0-1) at every time of day.",
+    "Only add walkways someone has actually seen. Re-run `python -m backend.shade.build_shade` after editing.",
+    "Example: {\"name\": \"...\", \"note\": \"who checked it and when\", \"buffer_m\": 6, \"shade\": 1.0, \"path\": [[33.4180, -111.9345], [33.4183, -111.9345]]}"
+  ],
+  "walkways": []
+}
