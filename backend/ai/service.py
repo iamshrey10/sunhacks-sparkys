@@ -175,6 +175,7 @@ Rules:
   illnesses or what the walker should do for their health.
 - Never mention the walker's age or why they are sensitive to heat.
 - Never write the number 0: say "no stairs" or "no extra time" instead.
+- Mention stairs only if the facts list them.
 - Say "minutes in direct sun", not "sun minutes".
 - No greetings, lists or markdown.
 """
@@ -213,25 +214,31 @@ def _route_facts(req: ExplainRequest) -> dict:
     sun_saved_s = fast.sun_exposed_s - cool.sun_exposed_s
 
     if fast.geometry == cool.geometry:
-        verdict = "same route: the fastest route is also the coolest"
+        verdict = "same route"
     elif shade_gain < MIN_SHADE_GAIN_PCT and sun_saved_s < MIN_SUN_SAVED_S:
-        verdict = "not much cooler: the cooler route barely changes sun exposure"
+        verdict = "not much cooler"
     elif extra_s > max(MUCH_LONGER_S, MUCH_LONGER_SHARE * fast.duration_s):
-        verdict = "cooler but much longer: say the extra time is a real cost"
+        verdict = "cooler but much longer"
     else:
-        verdict = "clearly cooler for a small extra walk"
+        verdict = "clearly cooler"
 
+    # Differences come from the rounded minutes, so "27 instead of 30" never
+    # appears next to "2 extra minutes".
+    fast_min, cool_min = _minutes(fast.duration_s), _minutes(cool.duration_s)
+    fast_sun, cool_sun = _minutes(fast.sun_exposed_s), _minutes(cool.sun_exposed_s)
     return {
         "verdict": verdict,
-        "fastest_minutes": _minutes(fast.duration_s),
+        "fastest_minutes": fast_min,
         "fastest_shade_pct": round(fast.shade_pct),
-        "fastest_sun_minutes": _minutes(fast.sun_exposed_s),
-        "cooler_minutes": _minutes(cool.duration_s),
+        "fastest_sun_minutes": fast_sun,
+        "cooler_minutes": cool_min,
         "cooler_shade_pct": round(cool.shade_pct),
-        "cooler_sun_minutes": _minutes(cool.sun_exposed_s),
-        "extra_minutes": max(_minutes(extra_s), 0),
-        "sun_minutes_saved": max(_minutes(sun_saved_s), 0),
+        "cooler_sun_minutes": cool_sun,
+        "extra_minutes": max(cool_min - fast_min, 0),
+        "sun_minutes_saved": max(fast_sun - cool_sun, 0),
         "cooler_stairs": cool.stairs_count,
+        # Not shown to the model; used to catch a made-up "no stairs".
+        "fastest_stairs": fast.stairs_count,
         "depart_time": req.route.depart_time,
         "walker_avoids_stairs": req.prefs.avoid_stairs,
         "walker_heat_sensitivity": req.prefs.heat_sensitivity,
@@ -306,15 +313,35 @@ FACT_LABELS = {
     "depart_time": "leaving at",
     "walker_heat_sensitivity": "walker's heat sensitivity",
 }
+# What the model is told for each verdict. Written to read naturally if copied.
+VERDICT_GUIDANCE = {
+    "same route": "the fastest route is already the coolest one; describe this one "
+    "route and do not compare two routes",
+    "not much cooler": "the cooler route is not much cooler than the fastest, so the "
+    "fastest is a reasonable choice",
+    "cooler but much longer": "the cooler route has more shade but takes much longer; "
+    "say the extra time is a real cost",
+    "clearly cooler": "the cooler route is worth it: noticeably more shade for a little "
+    "extra walking",
+}
 # Stairs only matter to someone who asked to avoid them.
 STAIRS_FACTS = ("cooler_stairs",)
+# With one route there is nothing to compare, so these would only invite "saves no minutes".
+COMPARISON_FACTS = (
+    "cooler_minutes", "cooler_shade_pct", "cooler_sun_minutes", "extra_minutes",
+    "sun_minutes_saved",
+)
 
 
 def _explain_prompt(facts: dict) -> str:
+    same_route = facts["verdict"] == "same route"
     lines = [
-        f"- {FACT_LABELS[key]}: {value}"
+        f"- {FACT_LABELS[key]}: "
+        f"{VERDICT_GUIDANCE[value] if key == 'verdict' else value}"
         for key, value in facts.items()
-        if key in FACT_LABELS and (facts["walker_avoids_stairs"] or key not in STAIRS_FACTS)
+        if key in FACT_LABELS
+        and (facts["walker_avoids_stairs"] or key not in STAIRS_FACTS)
+        and not (same_route and key in COMPARISON_FACTS)
     ]
     if facts["walker_avoids_stairs"]:
         lines.append("- the walker asked to avoid stairs")
@@ -335,9 +362,31 @@ def explain_route(req: ExplainRequest) -> ExplainResponse:
     # The model only phrases the facts. If it cites a number that is not in the
     # input, drifts into advice, or does not read as finished prose, use the
     # fixed wording instead.
-    if not _reads_well(text) or not _is_safe(text, _allowed_numbers(req, facts)):
+    if (
+        not _reads_well(text)
+        or _contradicts(text, facts)
+        or not _is_safe(text, _allowed_numbers(req, facts))
+    ):
         text = _template_explanation(facts)
     return ExplainResponse(text=text)
+
+
+def _contradicts(text: str, facts: dict) -> bool:
+    """True when the wording says the opposite of the facts, even with the right numbers."""
+    lower = text.lower()
+    if facts["extra_minutes"] > 0 and re.search(r"no extra|no longer than|no more time", lower):
+        return True
+    if facts["sun_minutes_saved"] > 0 and re.search(r"sav(?:es|ing) no\b|no less", lower):
+        return True
+    has_stairs = facts["cooler_stairs"] > 0 or facts["fastest_stairs"] > 0
+    if has_stairs and re.search(r"no (?:stairs|steps)|without (?:stairs|steps)|stair-free", lower):
+        return True
+    verdict = facts["verdict"]
+    if verdict in ("not much cooler", "same route"):
+        return re.search(r"clearly cooler|(?<!not )much cooler|worth it", lower) is not None
+    if verdict in ("clearly cooler", "cooler but much longer"):
+        return "not much cooler" in lower
+    return False
 
 
 # Copying an internal field name (shade_pct, "shade pct", "sun minutes",
@@ -353,5 +402,13 @@ def _reads_well(text: str) -> bool:
     leaked = any(word in text.lower() for word in LEAKED_FIELD_WORDS)
     # "0 stairs" or "0 extra minutes" is correct but reads like a data dump.
     bare_zero = re.search(r"(?<![\d.:])0(?![\d.:%])", text) is not None
+    # "1 minutes" or "1 extra walking minutes".
+    bad_plural = re.search(r"(?<![\d.:])1 (?:[a-z]+ ){0,2}minutes\b", text) is not None
     sentences = [s for s in re.split(r"(?<=[.!?])\s+", text) if s]
-    return finished and not leaked and not bare_zero and 1 <= len(sentences) <= MAX_SENTENCES
+    return (
+        finished
+        and not leaked
+        and not bare_zero
+        and not bad_plural
+        and 1 <= len(sentences) <= MAX_SENTENCES
+    )
