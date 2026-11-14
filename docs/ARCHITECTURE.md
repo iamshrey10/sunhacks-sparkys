@@ -33,7 +33,7 @@ Rules:
 
 | Module | Path | Owner | Branch |
 |---|---|---|---|
-| API shell, contract, integration, APK, deploy | `backend/api/`, `android/` | Shreyas | `shreyas` |
+| API shell, contract, integration, APK, deploy | `backend/api/`, `mobile/` | Shreyas | `shreyas` |
 | Resources + live hours | `backend/resources/`, `data/resources/` | Shreyas | `shreyas` |
 | Shade precompute | `backend/shade/` | Rohan | `rohan` |
 | Route finder | `backend/routing/` | Rohan | `rohan` |
@@ -82,5 +82,10 @@ building height and tree density per segment. Say so in the README.
 
 - Web build and precomputed data on S3. API on Lambda + API Gateway if the map
   data loads fast enough, otherwise run the API on the demo laptop and say so.
-- APK built with Capacitor from `frontend/dist`. If the APK fails late, ship the
-  hosted web build as an installable page.
+- APK built with Capacitor (`mobile/`) from `frontend/dist`: `cd mobile && npm run apk`.
+  A debug APK already builds. If the APK fails late, ship the hosted web build as
+  an installable page.
+- The app runs from `https://localhost` inside the APK, so the API must be
+  reachable over HTTPS (API Gateway, or a tunnel to the demo laptop). Plain
+  `http://<laptop-ip>:8000` is blocked as mixed content. Set the URL with
+  `VITE_API_URL` before building the frontend.
