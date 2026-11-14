@@ -6,5 +6,20 @@
     "Only add walkways someone has actually seen. Re-run `python -m backend.shade.build_shade` after editing.",
     "Example: {\"name\": \"...\", \"note\": \"who checked it and when\", \"buffer_m\": 6, \"shade\": 1.0, \"path\": [[33.4180, -111.9345], [33.4183, -111.9345]]}"
   ],
-  "walkways": []
+  "walkways": [
+    {
+      "name": "Orange Mall solar canopy (Cady Mall to Hayden Mall)",
+      "note": "Seen on Google Maps satellite imagery, 2026-11-14: solar shade structure about 108 m x 25 m over the mall, people walking under it. Not checked on foot.",
+      "buffer_m": 12,
+      "shade": 1.0,
+      "path": [[33.41840, -111.93524], [33.41840, -111.93408]]
+    },
+    {
+      "name": "Cady Mall solar canopy (south leg off Orange Mall)",
+      "note": "Seen on Google Maps satellite imagery, 2026-11-14: solar shade structure about 29 m wide running south from the Orange Mall canopy. Not checked on foot.",
+      "buffer_m": 12,
+      "shade": 1.0,
+      "path": [[33.41822, -111.93508], [33.41804, -111.93508]]
+    }
+  ]
 }
