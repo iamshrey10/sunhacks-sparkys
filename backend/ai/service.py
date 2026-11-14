@@ -128,5 +128,139 @@ def parse_request(req: ParseRequest) -> ParseResponse:
     )
 
 
+EXPLAIN_INSTRUCTIONS = """\
+You explain a walking route choice to a pedestrian in Tempe, Arizona, in 2 or 3
+short, plain sentences.
+
+Rules:
+- Use only the facts given. Write numbers as digits, exactly as given. Do not
+  compute new numbers, percentages, ratios or temperatures.
+- Follow the verdict honestly. If it says the cooler route is not much cooler
+  or is much longer, say so plainly and do not oversell it.
+- No medical or legal advice and no health claims. Do not mention symptoms,
+  illnesses or what the walker should do for their health.
+- No greetings, lists or markdown.
+"""
+
+# The cooler route counts as meaningfully cooler with at least this much
+# extra shade or this much less time in direct sun.
+MIN_SHADE_GAIN_PCT = 10
+MIN_SUN_SAVED_S = 120
+# It counts as much longer past this many extra seconds or this share of the fastest time.
+MUCH_LONGER_S = 600
+MUCH_LONGER_SHARE = 0.5
+
+BLOCKED_WORDS = re.compile(
+    r"doctor|medical|diagnos|heatstroke|heat stroke|dehydrat|symptom|emergency|"
+    r"legal|lawyer|liabilit|guarantee",
+    re.IGNORECASE,
+)
+
+
+def _minutes(seconds: float) -> int:
+    return int(seconds / 60 + 0.5)
+
+
+def _plural(n: int, word: str) -> str:
+    return f"{n} {word}" if n == 1 else f"{n} {word}s"
+
+
+def _route_facts(req: ExplainRequest) -> dict:
+    """Every number the explanation may cite, plus a verdict decided by code."""
+    fast, cool = req.route.fastest, req.route.coolest
+    extra_s = cool.duration_s - fast.duration_s
+    shade_gain = cool.shade_pct - fast.shade_pct
+    sun_saved_s = fast.sun_exposed_s - cool.sun_exposed_s
+
+    if fast.geometry == cool.geometry:
+        verdict = "same route: the fastest route is also the coolest"
+    elif shade_gain < MIN_SHADE_GAIN_PCT and sun_saved_s < MIN_SUN_SAVED_S:
+        verdict = "not much cooler: the cooler route barely changes sun exposure"
+    elif extra_s > max(MUCH_LONGER_S, MUCH_LONGER_SHARE * fast.duration_s):
+        verdict = "cooler but much longer: say the extra time is a real cost"
+    else:
+        verdict = "clearly cooler for a small extra walk"
+
+    return {
+        "verdict": verdict,
+        "fastest_minutes": _minutes(fast.duration_s),
+        "fastest_shade_pct": round(fast.shade_pct),
+        "fastest_sun_minutes": _minutes(fast.sun_exposed_s),
+        "cooler_minutes": _minutes(cool.duration_s),
+        "cooler_shade_pct": round(cool.shade_pct),
+        "cooler_sun_minutes": _minutes(cool.sun_exposed_s),
+        "extra_minutes": max(_minutes(extra_s), 0),
+        "sun_minutes_saved": max(_minutes(sun_saved_s), 0),
+        "cooler_stairs": cool.stairs_count,
+        "depart_time": req.route.depart_time,
+        "walker_avoids_stairs": req.prefs.avoid_stairs,
+        "walker_heat_sensitivity": req.prefs.heat_sensitivity,
+    }
+
+
+def _allowed_numbers(req: ExplainRequest, facts: dict) -> set[float]:
+    allowed = {0.0}
+    for value in facts.values():
+        if isinstance(value, int) and not isinstance(value, bool):
+            allowed.add(float(value))
+    allowed.update(float(n) for n in re.findall(r"\d+", req.route.depart_time))
+    for option in (req.route.fastest, req.route.coolest):
+        allowed.update(
+            float(v) for v in (option.distance_m, option.shade_pct, option.stairs_count)
+        )
+    return allowed
+
+
+def _is_safe(text: str, allowed: set[float]) -> bool:
+    numbers = {float(n) for n in re.findall(r"\d+(?:\.\d+)?", text)}
+    return bool(text) and numbers <= allowed and not BLOCKED_WORDS.search(text)
+
+
+def _template_explanation(facts: dict) -> str:
+    """Fixed wording used when the model's answer fails the checks."""
+    fast_shade, cool_shade = facts["fastest_shade_pct"], facts["cooler_shade_pct"]
+    fast_sun = _plural(facts["fastest_sun_minutes"], "minute")
+    cool_sun = _plural(facts["cooler_sun_minutes"], "minute")
+    extra = _plural(facts["extra_minutes"], "minute")
+    verdict = facts["verdict"]
+
+    if verdict.startswith("same route"):
+        return (
+            f"The fastest route is also the coolest one here: about {fast_shade}% "
+            f"shaded, with about {fast_sun} in direct sun."
+        )
+    if verdict.startswith("not much cooler"):
+        sun = (
+            f"about the same {fast_sun} in direct sun"
+            if cool_sun == fast_sun
+            else f"about {cool_sun} in direct sun versus {fast_sun}"
+        )
+        return (
+            f"The cooler route is not much cooler: about {cool_shade}% shaded versus "
+            f"{fast_shade}%, with {sun}. The fastest route is a reasonable choice."
+        )
+    text = (
+        f"The cooler route is about {cool_shade}% shaded versus {fast_shade}% "
+        f"on the fastest route, cutting time in direct sun from about {fast_sun} "
+        f"to {cool_sun}."
+    )
+    if verdict.startswith("cooler but much longer"):
+        return text + f" It takes about {extra} longer, which is a real trade-off."
+    return text + f" It adds about {extra} to the walk."
+
+
 def explain_route(req: ExplainRequest) -> ExplainResponse:
-    raise NotImplementedError("Route explainer not implemented yet")
+    facts = _route_facts(req)
+    config = types.GenerateContentConfig(
+        system_instruction=EXPLAIN_INSTRUCTIONS,
+        temperature=0.2,
+        max_output_tokens=200,
+    )
+    prompt = "Facts:\n" + "\n".join(f"- {k}: {v}" for k, v in facts.items())
+    text = " ".join(_generate(prompt, config).split())
+
+    # The model only phrases the facts. If it cites a number that is not in the
+    # input or drifts into advice, use the fixed wording instead.
+    if not _is_safe(text, _allowed_numbers(req, facts)):
+        text = _template_explanation(facts)
+    return ExplainResponse(text=text)
