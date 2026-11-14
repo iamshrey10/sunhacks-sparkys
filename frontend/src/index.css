@@ -83,9 +83,12 @@ body {
   overscroll-behavior: none;
 }
 
-:focus-visible {
-  outline: 2px solid var(--color-focus);
-  outline-offset: 2px;
+/* In the base layer so a component can restyle focus (e.g. the search bar). */
+@layer base {
+  :focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+  }
 }
 
 /* Leaflet draws its attribution in its own colours; match the palette. */
@@ -102,5 +105,25 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .leaflet-bottom {
     transition: none;
+  }
+}
+
+/*
+ * Frosted glass for the floating search bar and its results. The plain
+ * declaration is the fallback (opaque mist) for engines without color-mix or
+ * backdrop-filter; the translucent one overrides it where supported.
+ */
+.glass {
+  background: var(--color-mist);
+  background: color-mix(in srgb, var(--color-mist) 80%, transparent);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--color-sky);
+  border: 1px solid color-mix(in srgb, var(--color-sky) 60%, transparent);
+  box-shadow: var(--shadow-pop);
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass {
+    background: var(--color-mist);
   }
 }

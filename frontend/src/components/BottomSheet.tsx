@@ -35,6 +35,8 @@ interface Props {
   peek: ReactNode
   /** Identifies the current screen so each one keeps its own scroll position. */
   scrollKey: string
+  /** Pixels at the top of the screen the sheet must never cover (header, search bar). */
+  reservedTop: number
   children: ReactNode
 }
 
@@ -66,6 +68,7 @@ export default function BottomSheet({
   tabs,
   peek,
   scrollKey,
+  reservedTop,
   children,
 }: Props) {
   const sheetRef = useRef<HTMLDivElement>(null)
@@ -99,7 +102,10 @@ export default function BottomSheet({
   }, [])
 
   const measured = dims.screen > 0
-  const full = Math.round(dims.screen * FULL_RATIO)
+  const full = Math.min(
+    Math.round(dims.screen * FULL_RATIO),
+    Math.max(dims.screen - reservedTop, 200),
+  )
   const peekPx = Math.min(dims.top + dims.safe + PEEK_CONTENT, full - 120)
   const half = clamp(Math.round(dims.screen * HALF_RATIO), peekPx + 96, full - 48)
   const heights: Record<Snap, number> = { peek: peekPx, half, full }

@@ -1,11 +1,10 @@
-import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { api, USE_MOCKS } from './api'
 import AskBox from './components/AskBox'
-import SearchField from './components/SearchField'
-import SearchResults from './components/SearchResults'
+import FloatingSearch from './components/FloatingSearch'
 import { useRecents, type Recent } from './hooks/useRecents'
 import { useSearch } from './hooks/useSearch'
-import { optionId, searchPlaces, type PlaceResult } from './search'
+import { searchPlaces, type PlaceResult } from './search'
 import HelpNow from './components/HelpNow'
 import RouteForm from './components/RouteForm'
 import { DEFAULT_TIME, buildRequest, type FormValue, type PickTarget } from './form'
@@ -25,8 +24,8 @@ import {
 
 type ApiState = 'checking' | 'online' | 'offline'
 
-/** Space the floating header takes at the top of the map. */
-const HEADER_PX = 56
+/** Space the floating header and search bar take at the top of the map. */
+const TOP_PAD = 124
 
 export default function App() {
   const [apiState, setApiState] = useState<ApiState>(
@@ -46,7 +45,10 @@ export default function App() {
     setPrefs(next.prefs)
     // A point that changed by hand no longer has the searched place's name.
     if (next.start !== form.start) setLabels((l) => ({ ...l, start: undefined }))
-    if (next.end !== form.end) setLabels((l) => ({ ...l, end: undefined }))
+    if (next.end !== form.end) {
+      setLabels((l) => ({ ...l, end: undefined }))
+      if (!fromSearch.current) search.setQuery('')
+    }
   }
   const [picking, setPicking] = useState<PickTarget | null>(null)
   const [snap, setSnap] = useState<Snap>('half')
@@ -61,7 +63,8 @@ export default function App() {
   // Friendly names for points chosen by search or location, instead of coordinates.
   const [labels, setLabels] = useState<Partial<Record<PickTarget, string>>>({})
   const searchInput = useRef<HTMLInputElement>(null)
-  const listboxId = useId()
+  // True while a place change comes from search, so the search text is kept.
+  const fromSearch = useRef(false)
   const [route, setRoute] = useState<RouteResponse | null>(null)
   const [explanation, setExplanation] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -167,13 +170,11 @@ export default function App() {
     </div>
   )
 
-  const rows: (PlaceResult | Recent)[] = search.query.trim()
-    ? search.results
-    : recents
-
   const pickPlace = (p: PlaceResult | Recent) => {
     const end = { lat: p.lat, lng: p.lng }
+    fromSearch.current = true
     setForm((f) => ({ ...f, end }))
+    fromSearch.current = false
     setLabels((l) => ({ ...l, end: p.name }))
     search.setQuery(p.name)
     setSearching(false)
@@ -222,47 +223,6 @@ export default function App() {
     return first.name
   }
 
-  const onSearchKey = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'ArrowDown' && rows.length) {
-      e.preventDefault()
-      search.setActive((search.active + 1) % rows.length)
-    } else if (e.key === 'ArrowUp' && rows.length) {
-      e.preventDefault()
-      search.setActive((search.active - 1 + rows.length) % rows.length)
-    } else if (e.key === 'Enter' && rows[search.active]) {
-      e.preventDefault()
-      pickPlace(rows[search.active])
-    } else if (e.key === 'Escape') {
-      setSearching(false)
-      searchInput.current?.blur()
-    }
-  }
-
-  const searchField = (
-    <SearchField
-      value={search.query}
-      onChange={(v) => {
-        search.setQuery(v)
-        setSearching(true)
-      }}
-      onFocus={() => {
-        setSearching(true)
-        setSnap('full')
-      }}
-      onKeyDown={onSearchKey}
-      onClear={() => {
-        search.setQuery('')
-        setSearching(true)
-        setSnap('full')
-        searchInput.current?.focus()
-      }}
-      expanded={searching}
-      activeId={searching && rows.length ? optionId(listboxId, search.active) : undefined}
-      listboxId={listboxId}
-      inputRef={searchInput}
-    />
-  )
-
   const tabs = (
     <nav
       className="flex gap-1 rounded-lg bg-sky p-1"
@@ -297,7 +257,7 @@ export default function App() {
           onMapClick={handleMapClick}
           route={tab === 'route' ? route : null}
           resources={tab === 'help' ? resources : []}
-          topPad={HEADER_PX}
+          topPad={TOP_PAD}
           bottomPad={sheetPx}
           focus={focus}
         />
@@ -321,34 +281,35 @@ export default function App() {
         </div>
       </header>
 
+      <FloatingSearch
+        query={search.query}
+        onQueryChange={search.setQuery}
+        results={search.results}
+        recents={recents}
+        activeIndex={search.active}
+        onActiveChange={search.setActive}
+        open={searching}
+        onOpen={() => setSearching(true)}
+        onClose={() => setSearching(false)}
+        onChoose={pickPlace}
+        onChooseOnMap={() => {
+          setSearching(false)
+          searchInput.current?.blur()
+          startPicking('end')
+        }}
+        inputRef={searchInput}
+      />
+
       <BottomSheet
         snap={snap}
         onSnapChange={setSnap}
         onSettled={setSheetPx}
-        scrollKey={searching ? 'search' : tab}
+        scrollKey={tab}
+        reservedTop={TOP_PAD}
         tabs={tabs}
-        peek={
-          <>
-            {searchField}
-            {peekSummary}
-          </>
-        }
+        peek={peekSummary}
       >
-        {searching ? (
-          <SearchResults
-            query={search.query}
-            results={search.results}
-            recents={recents}
-            activeIndex={search.active}
-            listboxId={listboxId}
-            onChoose={pickPlace}
-            onChooseOnMap={() => {
-              setSearching(false)
-              searchInput.current?.blur()
-              startPicking('end')
-            }}
-          />
-        ) : tab === 'help' ? (
+        {tab === 'help' ? (
           <HelpNow
             resources={resources}
             onResources={(_origin, list) => {
