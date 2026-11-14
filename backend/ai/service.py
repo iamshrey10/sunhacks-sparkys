@@ -44,10 +44,14 @@ Rules:
   ("Walk to Mill Ave" gives "Mill Ave"). null if no place is named.
 - avoid_stairs: true only if they ask to avoid stairs or mention a wheelchair,
   walker, crutches, stroller, cane or trouble with steps. Otherwise false.
-- heat_sensitivity: "high" if they say they overheat easily or are sensitive
-  to heat, or mention anything that raises heat risk: a heart or lung
-  condition, diabetes, pregnancy, being elderly, or medication that affects
-  heat. "low" if they say heat does not bother them. Otherwise "normal".
+- stated_age: their age in years only if they state it as a number ("I'm 78").
+  null for vague words like "old", "elderly" or "senior".
+- heat_sensitivity: "high" only for a stated age of 65 or older or an explicit
+  heat-risk statement: they overheat easily or are sensitive to heat, or have a
+  heart or lung condition, diabetes, pregnancy, or medication that affects
+  heat. A stated age under 65 stays "normal". Vague words like "old", "tired"
+  or "hot" stay "normal". "low" only if they say heat does not bother them.
+  Otherwise "normal".
 - Never guess. If the text does not say something, use null or the default.
 """
 
@@ -57,10 +61,16 @@ PARSE_SCHEMA = {
         "depart_time": {"type": ["string", "null"], "description": "24-hour HH:MM or null"},
         "destination_text": {"type": ["string", "null"]},
         "avoid_stairs": {"type": "boolean"},
+        "stated_age": {"type": ["integer", "null"]},
         "heat_sensitivity": {"type": "string", "enum": ["low", "normal", "high"]},
     },
-    "required": ["depart_time", "destination_text", "avoid_stairs", "heat_sensitivity"],
+    "required": [
+        "depart_time", "destination_text", "avoid_stairs", "stated_age", "heat_sensitivity"
+    ],
 }
+# A stated age at or above this always means high heat sensitivity, decided here
+# rather than by the model. The age itself is never returned or explained.
+HIGH_RISK_AGE = 65
 
 
 def _generate(contents: str, config: types.GenerateContentConfig) -> str:
@@ -120,6 +130,9 @@ def parse_request(req: ParseRequest) -> ParseResponse:
     heat = data.get("heat_sensitivity")
     if heat not in ("low", "normal", "high"):
         heat = "normal"
+    age = data.get("stated_age")
+    if isinstance(age, int) and not isinstance(age, bool) and HIGH_RISK_AGE <= age <= 120:
+        heat = "high"
 
     return ParseResponse(
         depart_time=depart_time,
@@ -139,6 +152,7 @@ Rules:
   or is much longer, say so plainly and do not oversell it.
 - No medical or legal advice and no health claims. Do not mention symptoms,
   illnesses or what the walker should do for their health.
+- Never mention the walker's age or why they are sensitive to heat.
 - No greetings, lists or markdown.
 """
 
@@ -152,7 +166,8 @@ MUCH_LONGER_SHARE = 0.5
 
 BLOCKED_WORDS = re.compile(
     r"doctor|medical|diagnos|heatstroke|heat stroke|dehydrat|symptom|emergency|"
-    r"legal|lawyer|liabilit|guarantee",
+    r"legal|lawyer|liabilit|guarantee|years old|your age|elderly|senior|"
+    r"because you'?re",
     re.IGNORECASE,
 )
 

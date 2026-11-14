@@ -101,7 +101,7 @@ def test_parse_asks_for_json_with_a_schema_at_zero_temperature(gemini):
     assert call.config.temperature == 0
     assert call.config.response_mime_type == "application/json"
     assert set(call.config.response_json_schema["required"]) == {
-        "depart_time", "destination_text", "avoid_stairs", "heat_sensitivity"
+        "depart_time", "destination_text", "avoid_stairs", "stated_age", "heat_sensitivity"
     }
 
 
@@ -124,6 +124,41 @@ def test_parse_trims_the_destination(gemini):
     assert (r.depart_time, r.destination_text, r.prefs.heat_sensitivity) == (
         "14:30", "Mill Ave", "high"
     )
+
+
+def model_json(**fields):
+    base = {"depart_time": None, "destination_text": None, "avoid_stairs": False,
+            "stated_age": None, "heat_sensitivity": "normal"}
+    return json.dumps({**base, **fields})
+
+
+@pytest.mark.parametrize(
+    "text, model_fields, expected",
+    [
+        ("I'm 78", {"stated_age": 78}, "high"),
+        ("I'm 30", {"stated_age": 30}, "normal"),
+        ("I'm old", {}, "normal"),
+        ("I'm 65", {"stated_age": 65}, "high"),
+        ("I'm 64", {"stated_age": 64}, "normal"),
+        ("I'm 30 and have diabetes", {"stated_age": 30, "heat_sensitivity": "high"}, "high"),
+        ("I'm 70 and heat doesn't bother me", {"stated_age": 70, "heat_sensitivity": "low"}, "high"),
+    ],
+)
+def test_age_rule_is_decided_by_code(gemini, text, model_fields, expected):
+    gemini.reply = model_json(**model_fields)
+    assert service.parse_request(ParseRequest(text=text)).prefs.heat_sensitivity == expected
+
+
+@pytest.mark.parametrize("age", ["78", 300, 0, -5, True, 70.5])
+def test_malformed_age_is_ignored(gemini, age):
+    gemini.reply = model_json(stated_age=age)
+    assert service.parse_request(ParseRequest(text="I'm old")).prefs.heat_sensitivity == "normal"
+
+
+def test_age_is_not_returned_to_the_app(gemini):
+    gemini.reply = model_json(stated_age=78)
+    r = service.parse_request(ParseRequest(text="I'm 78"))
+    assert "78" not in r.model_dump_json()
 
 
 @pytest.mark.parametrize("reply", ["not json", "[1, 2]", '"just a string"'])
@@ -204,6 +239,10 @@ def test_explain_keeps_model_text_that_uses_input_numbers(gemini):
         "The cooler route is 64% shaded and saves",  # cut off mid-sentence
         "The cooler route has 64 shade_pct.",  # leaked field name
         "The cooler route has 4 sun minutes.",  # leaked field wording
+        "Because you're 78, take the cooler route with 64% shade.",  # age
+        "Because you're sensitive to heat, the 64% shaded route is better.",
+        "As someone 78 years old, the cooler route is better.",
+        "For elderly walkers the cooler route is 64% shaded.",
     ],
 )
 def test_explain_falls_back_to_template_on_bad_model_text(gemini, reply):
