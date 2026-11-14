@@ -26,3 +26,11 @@ venv/
 *.log
 .vercel/
 coverage/
+
+# Local tool settings, caches, raw map downloads
+.pytest_cache/
+*.egg-info/
+data/raw/
+android/app/build/
+android/.gradle/
+android/local.properties

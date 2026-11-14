@@ -1,0 +1,7 @@
+# Map, shade and routing (Rohan). Install on top of requirements.txt.
+-r requirements.txt
+osmnx>=2.0
+networkx>=3.3
+geopandas>=1.0
+shapely>=2.0
+pvlib>=0.11
