@@ -24,7 +24,7 @@ function Column({
 }) {
   return (
     <div
-      className="flex-1 rounded-lg border border-line bg-white p-3 shadow-card"
+      className="flex-1 rounded-lg border border-sky bg-white p-3 shadow-card"
       style={{ borderTop: `5px solid ${color}` }}
     >
       <div className="font-bold">{label}</div>
@@ -33,11 +33,11 @@ function Column({
         <span className="text-base font-bold">% shade</span>
       </div>
       <div
-        className="mt-1 h-2 overflow-hidden rounded-full bg-amber"
+        className="mt-1 h-2 overflow-hidden rounded-full bg-sun"
         aria-hidden="true"
       >
         <div
-          className="h-full rounded-full bg-aqua" style={{ width: `${Math.round(option.shade_pct)}%` }}
+          className="h-full rounded-full bg-cool" style={{ width: `${Math.round(option.shade_pct)}%` }}
         />
       </div>
       <dl className="mt-2 text-sm">
@@ -77,7 +77,7 @@ export default function ComparisonCard({
       <div>
         <label htmlFor="shade-weight" className="flex justify-between font-semibold">
           <span>Shade vs speed</span>
-          <span className="text-sm text-neutral-ink">
+          <span className="text-sm text-muted">
             {loading ? 'Updating…' : `${Math.round(shadeWeight * 100)}% shade`}
           </span>
         </label>
@@ -91,9 +91,9 @@ export default function ComparisonCard({
           onChange={(e) => onShadeChange(Number(e.target.value))}
           onPointerUp={onShadeCommit}
           onKeyUp={onShadeCommit}
-          className="h-11 w-full accent-deep"
+          className="h-11 w-full accent-cool"
         />
-        <div className="flex justify-between text-xs text-neutral-ink">
+        <div className="flex justify-between text-xs text-muted">
           <span>Fastest</span>
           <span>Coolest</span>
         </div>

@@ -19,9 +19,9 @@ interface Props {
 }
 
 const SENSITIVITY: Prefs['heat_sensitivity'][] = ['low', 'normal', 'high']
-const btn = 'min-h-11 rounded-md border-2 border-deep px-3 text-sm font-semibold '
-const btnIdle = btn + 'bg-white text-deep'
-const btnOn = btn + 'bg-deep text-white'
+const btn = 'min-h-11 rounded-md border-2 border-cool px-3 text-sm font-semibold '
+const btnIdle = btn + 'bg-white text-ink'
+const btnOn = btn + 'bg-periwinkle text-ink'
 
 const fmt = (p: LatLng | null) =>
   p ? `${p.lat.toFixed(4)}, ${p.lng.toFixed(4)}` : 'Not set'
@@ -59,10 +59,10 @@ export default function RouteForm({
   }
 
   const pointRow = (target: PickTarget, label: string) => (
-    <div className="rounded-lg border border-line bg-ice p-3 shadow-card">
+    <div className="rounded-lg border border-sky bg-powder p-3 shadow-card">
       <div className="flex items-baseline justify-between">
         <span className="font-semibold">{label}</span>
-        <span className="text-sm text-neutral-ink">{labels?.[target] ?? fmt(value[target])}</span>
+        <span className="text-sm text-muted">{labels?.[target] ?? fmt(value[target])}</span>
       </div>
       <div className="mt-2 flex gap-2">
         <button
@@ -120,7 +120,7 @@ export default function RouteForm({
         Avoid stairs
         <input
           type="checkbox"
-          className="h-6 w-6 accent-deep"
+          className="h-6 w-6 accent-cool"
           checked={value.prefs.avoid_stairs}
           onChange={(e) =>
             onChange({
@@ -156,12 +156,12 @@ export default function RouteForm({
       <button
         type="submit"
         disabled={!request || loading}
-        className="min-h-12 w-full rounded-lg bg-gradient-to-r from-deep to-teal-strong text-base font-bold text-white shadow-card disabled:bg-neutral-ink disabled:bg-none"
+        className="min-h-12 w-full rounded-lg bg-periwinkle border border-cool text-base font-bold text-ink shadow-card disabled:border-sky disabled:bg-sky disabled:text-muted"
       >
         {loading ? 'Finding route…' : 'Find cool route'}
       </button>
       {!request && (
-        <p className="text-sm text-neutral-ink">
+        <p className="text-sm text-muted">
           Set a start and an end to find a route.
         </p>
       )}

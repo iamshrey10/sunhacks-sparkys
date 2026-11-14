@@ -65,7 +65,7 @@ export default function AskBox({ onParsed, onDestination }: Props) {
         <button
           type="submit"
           disabled={busy || !text.trim()}
-          className="min-h-11 rounded-md bg-deep px-4 font-bold text-white disabled:bg-neutral-ink"
+          className="min-h-11 rounded-md bg-periwinkle px-4 font-bold text-ink disabled:bg-sky"
         >
           {busy ? 'Reading…' : 'Fill form'}
         </button>

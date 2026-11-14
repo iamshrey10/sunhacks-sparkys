@@ -28,8 +28,8 @@ export default function SearchField({
 }: Props) {
   return (
     <div className="px-4 pb-2">
-      <div className="flex min-h-12 items-center gap-2 rounded-lg border-2 border-neutral bg-white px-3 shadow-card focus-within:border-deep">
-        <Search size={20} className="shrink-0 text-deep" aria-hidden="true" />
+      <div className="flex min-h-12 items-center gap-2 rounded-lg border-2 border-neutral bg-white px-3 shadow-card focus-within:border-focus">
+        <Search size={20} className="shrink-0 text-ink" aria-hidden="true" />
         <input
           ref={inputRef}
           type="search"
@@ -46,14 +46,14 @@ export default function SearchField({
           onChange={(e) => onChange(e.target.value)}
           onFocus={onFocus}
           onKeyDown={onKeyDown}
-          className="min-h-11 min-w-0 flex-1 bg-transparent text-base text-ink outline-none placeholder:text-neutral-ink [&::-webkit-search-cancel-button]:hidden"
+          className="min-h-11 min-w-0 flex-1 bg-transparent text-base text-ink outline-none placeholder:text-muted [&::-webkit-search-cancel-button]:hidden"
         />
         {value && (
           <button
             type="button"
             aria-label="Clear search"
             onClick={onClear}
-            className="-mr-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-md text-neutral-ink"
+            className="-mr-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-md text-muted"
           >
             <X size={20} aria-hidden="true" />
           </button>

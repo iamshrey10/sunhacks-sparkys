@@ -174,10 +174,10 @@ export default function RouteMap({
             radius={10}
             pathOptions={marker(
               r.open_now === true
-                ? token('teal-strong')
+                ? token('cool')
                 : r.open_now === false
-                  ? token('neutral-ink')
-                  : token('amber'),
+                  ? token('neutral')
+                  : token('sun-strong'),
             )}
           >
             <Tooltip>{r.name}</Tooltip>
@@ -187,14 +187,14 @@ export default function RouteMap({
           <CircleMarker
             center={[start.lat, start.lng]}
             radius={9}
-            pathOptions={marker(token('aqua'))}
+            pathOptions={marker(token('cool'))}
           />
         )}
         {end && (
           <CircleMarker
             center={[end.lat, end.lng]}
             radius={9}
-            pathOptions={marker(token('deep'))}
+            pathOptions={marker(token('ink'))}
           />
         )}
       </MapContainer>

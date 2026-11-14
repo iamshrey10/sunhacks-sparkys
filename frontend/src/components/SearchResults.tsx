@@ -42,7 +42,7 @@ function Highlighted({ name, match }: { name: string; match: [number, number] | 
   return (
     <>
       {name.slice(0, a)}
-      <mark className="rounded-md bg-aqua/30 text-ink">{name.slice(a, b)}</mark>
+      <mark className="rounded-md bg-mint text-ink">{name.slice(a, b)}</mark>
       {name.slice(b)}
     </>
   )
@@ -73,17 +73,17 @@ function Row({
       onPointerDown={(e) => e.preventDefault()}
       onClick={onChoose}
       className={`flex min-h-12 cursor-pointer items-center gap-3 rounded-lg px-3 py-2 ${
-        active ? 'bg-ice' : 'hover:bg-ice'
+        active ? 'bg-powder' : 'hover:bg-powder'
       }`}
     >
-      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-ice text-deep">
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-powder text-ink">
         <Icon size={20} aria-hidden="true" />
       </span>
       <span className="min-w-0">
         <span className="block truncate font-semibold text-ink">
           <Highlighted name={place.name} match={match} />
         </span>
-        <span className="block truncate text-sm text-neutral-ink">
+        <span className="block truncate text-sm text-muted">
           {KIND[place.kind].label}
           {place.outsideRoutes && ' · Outside the walking-route area'}
         </span>
@@ -108,7 +108,7 @@ export default function SearchResults({
   return (
     <div className="pt-1">
       {!typing && recents.length > 0 && (
-        <h2 className="px-3 pb-1 text-sm font-bold text-neutral-ink">Recent</h2>
+        <h2 className="px-3 pb-1 text-sm font-bold text-muted">Recent</h2>
       )}
       <ul id={listboxId} role="listbox" aria-label="Places" className="space-y-1">
         {rows.map((p, i) => (
@@ -131,14 +131,14 @@ export default function SearchResults({
           <button
             type="button"
             onClick={onChooseOnMap}
-            className="mt-3 min-h-11 rounded-md border-2 border-deep px-4 font-semibold text-deep"
+            className="mt-3 min-h-11 rounded-md border-2 border-cool px-4 font-semibold text-ink"
           >
             Choose on map
           </button>
         </div>
       )}
       {!typing && recents.length === 0 && (
-        <p className="px-3 py-4 text-sm text-neutral-ink">
+        <p className="px-3 py-4 text-sm text-muted">
           Try Memorial Union, Hayden Library or Mill Ave.
         </p>
       )}

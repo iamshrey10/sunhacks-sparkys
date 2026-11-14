@@ -23,9 +23,9 @@ const KIND_LABEL: Record<Resource['kind'], string> = {
 }
 
 function openBadge(open: boolean | null) {
-  if (open === true) return { text: 'Open now', cls: 'bg-teal-strong text-white' }
-  if (open === false) return { text: 'Closed', cls: 'bg-neutral-ink text-white' }
-  return { text: 'Hours unknown', cls: 'bg-amber text-ink' }
+  if (open === true) return { text: 'Open now', cls: 'bg-mint text-ink' }
+  if (open === false) return { text: 'Closed', cls: 'bg-sky text-ink' }
+  return { text: 'Hours unknown', cls: 'bg-sun text-ink' }
 }
 
 const getPosition = () =>
@@ -76,7 +76,7 @@ export default function HelpNow({ onResources, resources, onWalk }: Props) {
         type="button"
         onClick={find}
         disabled={busy}
-        className="min-h-16 w-full rounded-lg bg-gradient-to-r from-deep to-teal-strong text-lg font-bold text-white shadow-card disabled:bg-neutral-ink disabled:bg-none"
+        className="min-h-16 w-full rounded-lg bg-periwinkle border border-cool text-lg font-bold text-ink shadow-card disabled:border-sky disabled:bg-sky disabled:text-muted"
       >
         {status === 'locating'
           ? 'Finding your location…'
@@ -104,11 +104,11 @@ export default function HelpNow({ onResources, resources, onWalk }: Props) {
         {resources.map((r) => {
           const badge = openBadge(r.open_now)
           return (
-            <li key={r.id} className="rounded-lg border border-line bg-white p-3 shadow-card">
+            <li key={r.id} className="rounded-lg border border-sky bg-white p-3 shadow-card">
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <p className="font-bold">{r.name}</p>
-                  <p className="text-sm text-neutral-ink">
+                  <p className="text-sm text-muted">
                     {KIND_LABEL[r.kind]}
                     {r.distance_m != null && ` · ${Math.round(r.distance_m)} m away`}
                   </p>
@@ -120,11 +120,11 @@ export default function HelpNow({ onResources, resources, onWalk }: Props) {
                 </span>
               </div>
               {r.hours_text && (
-                <p className="mt-1 text-sm text-neutral-ink">{r.hours_text}</p>
+                <p className="mt-1 text-sm text-muted">{r.hours_text}</p>
               )}
               <button
                 type="button"
-                className="mt-2 min-h-11 w-full rounded-md border-2 border-deep font-semibold text-deep"
+                className="mt-2 min-h-11 w-full rounded-md border-2 border-cool font-semibold text-ink"
                 onClick={() => origin && onWalk(origin, r)}
               >
                 Show walking route

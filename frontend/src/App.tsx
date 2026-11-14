@@ -143,11 +143,11 @@ export default function App() {
   const peekSummary = (
     <div className="px-4 pb-3 pt-1">
       {tab === 'help' ? (
-        <p className="min-h-11 py-2 text-sm text-neutral-ink">
+        <p className="min-h-11 py-2 text-sm text-muted">
           Pull up the panel to find water or a cool place nearby.
         </p>
       ) : route ? (
-        <p className="min-h-11 rounded-lg bg-ice px-3 py-2 text-sm font-bold text-deep">
+        <p className="min-h-11 rounded-lg bg-powder px-3 py-2 text-sm font-bold text-ink">
           {summaryText(route)}
         </p>
       ) : request ? (
@@ -155,12 +155,12 @@ export default function App() {
           type="button"
           disabled={loading}
           onClick={() => findRoute(request)}
-          className="min-h-11 w-full rounded-lg bg-gradient-to-r from-deep to-teal-strong text-base font-bold text-white shadow-card disabled:bg-neutral-ink disabled:bg-none"
+          className="min-h-11 w-full rounded-lg bg-periwinkle border border-cool text-base font-bold text-ink shadow-card disabled:border-sky disabled:bg-sky disabled:text-muted"
         >
           {loading ? 'Finding route…' : 'Find cool route'}
         </button>
       ) : picking ? (
-        <p className="min-h-11 py-2 text-sm font-semibold text-deep">
+        <p className="min-h-11 py-2 text-sm font-semibold text-ink">
           Tap the map to set the {picking}.
         </p>
       ) : null}
@@ -265,7 +265,7 @@ export default function App() {
 
   const tabs = (
     <nav
-      className="flex gap-1 rounded-lg bg-ice p-1"
+      className="flex gap-1 rounded-lg bg-sky p-1"
       aria-label="Screens"
     >
       {(['route', 'help'] as const).map((t) => (
@@ -278,7 +278,7 @@ export default function App() {
             setSearching(false)
           }}
           className={`min-h-11 flex-1 rounded-md text-sm font-bold transition-colors ${
-            tab === t ? 'bg-deep text-white shadow-card' : 'text-deep hover:bg-white'
+            tab === t ? 'bg-periwinkle text-ink shadow-card' : 'text-ink hover:bg-powder'
           }`}
         >
           {t === 'route' ? 'Plan a route' : 'Help now'}
@@ -304,20 +304,20 @@ export default function App() {
       </div>
 
       <header
-        className="absolute inset-x-2 z-[1200] flex h-11 items-center justify-between gap-2 rounded-lg bg-gradient-to-r from-deep to-teal-strong px-3 text-white shadow-pop"
+        className="absolute inset-x-2 z-[1200] flex h-11 items-center justify-between gap-2 rounded-lg bg-gradient-to-r from-header-from to-header-to px-3 text-ink shadow-pop"
         style={{ top: 'max(0.5rem, env(safe-area-inset-top))' }}
       >
         <div className="flex items-center gap-2">
           <svg width="26" height="26" viewBox="0 0 32 32" aria-hidden="true">
-            <circle cx="16" cy="16" r="15" className="fill-ice" />
-            <circle cx="21" cy="11" r="5" className="fill-amber" />
-            <path d="M4 26c4-9 10-13 24-12v12z" className="fill-deep" opacity="0.85" />
+            <circle cx="16" cy="16" r="15" className="fill-powder" />
+            <circle cx="21" cy="11" r="5" className="fill-sun-strong" />
+            <path d="M4 26c4-9 10-13 24-12v12z" className="fill-cool" opacity="0.85" />
           </svg>
           <h1 className="text-lg font-extrabold">Cool Route</h1>
         </div>
         <div className="flex items-center gap-2">
           <SampleBadge />
-          <span className="text-xs text-ice">API: {apiState}</span>
+          <span className="text-xs text-ink">API: {apiState}</span>
         </div>
       </header>
 
