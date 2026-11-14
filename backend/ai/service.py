@@ -71,7 +71,7 @@ def _generate(contents: str, config: types.GenerateContentConfig) -> str:
 
     client = genai.Client(
         api_key=settings.gemini_api_key,
-        http_options=types.HttpOptions(timeout=TIMEOUT_MS, retry_options=RETRY),
+        http_options=types.HttpOptions(api_version="v1beta", timeout=TIMEOUT_MS, retry_options=RETRY),
     )
     try:
         reply = client.models.generate_content(
@@ -254,13 +254,23 @@ def explain_route(req: ExplainRequest) -> ExplainResponse:
     config = types.GenerateContentConfig(
         system_instruction=EXPLAIN_INSTRUCTIONS,
         temperature=0.2,
-        max_output_tokens=200,
+        # Gemini 2.5 models spend output tokens on internal thinking before they
+        # write, so a small limit cuts the answer off mid-sentence.
+        max_output_tokens=1024,
     )
     prompt = "Facts:\n" + "\n".join(f"- {k}: {v}" for k, v in facts.items())
     text = " ".join(_generate(prompt, config).split())
 
     # The model only phrases the facts. If it cites a number that is not in the
-    # input or drifts into advice, use the fixed wording instead.
-    if not _is_safe(text, _allowed_numbers(req, facts)):
+    # input, drifts into advice, or was cut off mid-sentence, use the fixed
+    # wording instead.
+    # Copying an internal field name (shade_pct, "shade pct", "sun minutes",
+    # verdict) reads as broken to a user.
+    leaked = any(m in text.lower() for m in ("_", "pct", "sun minutes", "verdict"))
+    if (
+        not text.endswith((".", "!", "?"))
+        or leaked
+        or not _is_safe(text, _allowed_numbers(req, facts))
+    ):
         text = _template_explanation(facts)
     return ExplainResponse(text=text)
