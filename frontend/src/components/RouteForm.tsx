@@ -16,6 +16,8 @@ interface Props {
   loading: boolean
   /** Friendly names for a point (e.g. a searched place), shown instead of coordinates. */
   labels?: Partial<Record<PickTarget, string>>
+  /** When set, routing is blocked and this message explains why. */
+  notice?: string
 }
 
 const SENSITIVITY: Prefs['heat_sensitivity'][] = ['low', 'normal', 'high']
@@ -34,9 +36,10 @@ export default function RouteForm({
   onSubmit,
   loading,
   labels,
+  notice,
 }: Props) {
   const [geoError, setGeoError] = useState<string | null>(null)
-  const request = buildRequest(value)
+  const request = notice ? null : buildRequest(value)
 
   const locate = (target: PickTarget) => {
     setGeoError(null)
@@ -153,10 +156,16 @@ export default function RouteForm({
         </div>
       </fieldset>
 
-      {!request && (
-        <p className="text-sm text-muted">
-          Set a start and an end to find a route.
+      {notice ? (
+        <p role="status" className="rounded-lg bg-lavender px-3 py-2 text-sm font-semibold text-ink">
+          {notice}
         </p>
+      ) : (
+        !request && (
+          <p className="text-sm text-muted">
+            Set a start and an end to find a route.
+          </p>
+        )
       )}
       <button
         type="submit"

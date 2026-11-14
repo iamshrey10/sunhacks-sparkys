@@ -24,6 +24,9 @@ import {
 
 type ApiState = 'checking' | 'online' | 'offline'
 
+const OUTSIDE_MESSAGE =
+  'Outside the walking-route area. Choose a place on campus or Mill Ave.'
+
 /** Space the floating header and search bar take at the top of the map. */
 const TOP_PAD = 124
 
@@ -39,15 +42,26 @@ export default function App() {
   })
   const form: FormValue = { ...trip, prefs }
   // Trip details reset on reload; preferences are saved on this device.
+  // The newest form value, including updates made earlier in the same event, so
+  // two setForm calls in a row (e.g. parse, then pick a destination) compose.
+  const latest = useRef(form)
+  useEffect(() => {
+    latest.current = form
+  })
   const setForm = (update: FormValue | ((f: FormValue) => FormValue)) => {
-    const next = typeof update === 'function' ? update(form) : update
+    const prev = latest.current
+    const next = typeof update === 'function' ? update(prev) : update
+    latest.current = next
     setTrip({ start: next.start, end: next.end, departTime: next.departTime })
     setPrefs(next.prefs)
     // A point that changed by hand no longer has the searched place's name.
-    if (next.start !== form.start) setLabels((l) => ({ ...l, start: undefined }))
-    if (next.end !== form.end) {
+    if (next.start !== prev.start) setLabels((l) => ({ ...l, start: undefined }))
+    if (next.end !== prev.end) {
       setLabels((l) => ({ ...l, end: undefined }))
-      if (!fromSearch.current) search.setQuery('')
+      if (!fromSearch.current) {
+        search.setQuery('')
+        setEndOutside(false)
+      }
     }
   }
   const [picking, setPicking] = useState<PickTarget | null>(null)
@@ -65,6 +79,8 @@ export default function App() {
   const searchInput = useRef<HTMLInputElement>(null)
   // True while a place change comes from search, so the search text is kept.
   const fromSearch = useRef(false)
+  // The chosen destination is beyond the walking-route area: never ask /route.
+  const [endOutside, setEndOutside] = useState(false)
   const [route, setRoute] = useState<RouteResponse | null>(null)
   const [explanation, setExplanation] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -111,6 +127,7 @@ export default function App() {
     }))
 
   const findRoute = (req: RouteRequest) => {
+    if (endOutside) return
     setLoading(true)
     setError(null)
     setExplanation(null)
@@ -126,7 +143,7 @@ export default function App() {
         if (!USE_MOCKS) {
           api
             .explain(r, req.prefs)
-            .then((x) => setExplanation(x.text))
+            .then((x) => setExplanation(x.text.trim() || null))
             .catch(() => {})
         }
       })
@@ -148,6 +165,10 @@ export default function App() {
       {tab === 'help' ? (
         <p className="min-h-11 py-2 text-sm text-muted">
           Pull up the panel to find water or a cool place nearby.
+        </p>
+      ) : endOutside ? (
+        <p role="status" className="min-h-11 rounded-lg bg-lavender px-3 py-2 text-sm font-bold text-ink">
+          {OUTSIDE_MESSAGE}
         </p>
       ) : route ? (
         <p className="min-h-11 rounded-lg bg-powder px-3 py-2 text-sm font-bold text-ink">
@@ -176,6 +197,8 @@ export default function App() {
     setForm((f) => ({ ...f, end }))
     fromSearch.current = false
     setLabels((l) => ({ ...l, end: p.name }))
+    setEndOutside(!!p.outsideRoutes)
+    if (p.outsideRoutes) setRoute(null)
     search.setQuery(p.name)
     setSearching(false)
     searchInput.current?.blur()
@@ -329,7 +352,7 @@ export default function App() {
                 onShadeChange={(w) =>
                   setForm((f) => ({ ...f, prefs: { ...f.prefs, shade_weight: w } }))
                 }
-                onShadeCommit={() => request && findRoute(request)}
+                onShadeCommit={() => request && !endOutside && findRoute(request)}
               />
             )}
             <AskBox onParsed={applyParsed} onDestination={pickByText} />
@@ -341,6 +364,7 @@ export default function App() {
               onSubmit={findRoute}
               loading={loading}
               labels={labels}
+              notice={endOutside ? OUTSIDE_MESSAGE : undefined}
             />
             {error && (
               <p role="alert" className="mt-3 font-medium text-error-ink">

@@ -72,7 +72,8 @@ export default function ComparisonCard({
       </div>
       {explanation && <p className="text-sm">{explanation}</p>}
       {coolest.stairs_count > 0 && (
-        <p className="text-sm">Coolest route has {coolest.stairs_count} steps.</p>
+        <p className="text-sm">Coolest route has {coolest.stairs_count}{' '}
+          {coolest.stairs_count === 1 ? 'step' : 'steps'}.</p>
       )}
       <div>
         <label htmlFor="shade-weight" className="flex justify-between font-semibold">
