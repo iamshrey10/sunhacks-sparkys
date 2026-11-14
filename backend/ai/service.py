@@ -7,6 +7,7 @@ anything else. Raise NotImplementedError until a function works.
 
 import json
 import re
+from datetime import datetime, timedelta, timezone
 
 import httpx
 from google import genai
@@ -39,7 +40,9 @@ Rules:
   "noon" is "12:00", "half past 4" is "16:30". If AM/PM is not said, pick the
   reading between 07:00 and 19:59 ("2:30" is "14:30", "8" is "08:00").
   If no clear clock time is given ("after lunch", "soon", "later", "evening"),
-  use null. "now" is also null.
+  use null. Relative times also give null here.
+- leave_in_minutes: only for a relative time, the minutes from now: "in an
+  hour" is 60, "in 20 minutes" is 20, "now" or "right away" is 0. Otherwise null.
 - destination_text: the place they want to go, copied as written
   ("Walk to Mill Ave" gives "Mill Ave"). null if no place is named.
 - avoid_stairs: true only if they ask to avoid stairs or mention a wheelchair,
@@ -50,8 +53,9 @@ Rules:
   heat-risk statement: they overheat easily or are sensitive to heat, or have a
   heart or lung condition, diabetes, pregnancy, or medication that affects
   heat. A stated age under 65 stays "normal". Vague words like "old", "tired"
-  or "hot" stay "normal". "low" only if they say heat does not bother them.
-  Otherwise "normal".
+  or "hot" stay "normal", and so do comments about the weather or not liking
+  the sun ("it's so hot", "I don't love the sun", "I want shade").
+  "low" only if they say heat does not bother them. Otherwise "normal".
 - Never guess. If the text does not say something, use null or the default.
 """
 
@@ -59,15 +63,20 @@ PARSE_SCHEMA = {
     "type": "object",
     "properties": {
         "depart_time": {"type": ["string", "null"], "description": "24-hour HH:MM or null"},
+        "leave_in_minutes": {"type": ["integer", "null"]},
         "destination_text": {"type": ["string", "null"]},
         "avoid_stairs": {"type": "boolean"},
         "stated_age": {"type": ["integer", "null"]},
         "heat_sensitivity": {"type": "string", "enum": ["low", "normal", "high"]},
     },
     "required": [
-        "depart_time", "destination_text", "avoid_stairs", "stated_age", "heat_sensitivity"
+        "depart_time", "leave_in_minutes", "destination_text", "avoid_stairs",
+        "stated_age", "heat_sensitivity",
     ],
 }
+# Tempe is on Arizona time: UTC-7 all year, no daylight saving.
+TEMPE_TZ = timezone(timedelta(hours=-7))
+MAX_LEAVE_IN_MINUTES = 12 * 60
 # A stated age at or above this always means high heat sensitivity, decided here
 # rather than by the model. The age itself is never returned or explained.
 HIGH_RISK_AGE = 65
@@ -103,6 +112,10 @@ def _generate(contents: str, config: types.GenerateContentConfig) -> str:
     return reply.text
 
 
+def _now() -> datetime:
+    return datetime.now(TEMPE_TZ)
+
+
 def parse_request(req: ParseRequest) -> ParseResponse:
     config = types.GenerateContentConfig(
         system_instruction=PARSE_INSTRUCTIONS,
@@ -122,6 +135,14 @@ def parse_request(req: ParseRequest) -> ParseResponse:
     depart_time = data.get("depart_time")
     if not isinstance(depart_time, str) or not re.match(TIME_PATTERN, depart_time):
         depart_time = None
+    leave_in = data.get("leave_in_minutes")
+    if (
+        depart_time is None
+        and isinstance(leave_in, int)
+        and not isinstance(leave_in, bool)
+        and 0 <= leave_in <= MAX_LEAVE_IN_MINUTES
+    ):
+        depart_time = (_now() + timedelta(minutes=leave_in)).strftime("%H:%M")
 
     destination = data.get("destination_text")
     if not isinstance(destination, str) or not destination.strip():

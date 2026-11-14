@@ -6,6 +6,7 @@ The one live test is opt-in: set RUN_LIVE_GEMINI=1 with a real key in .env.
 import copy
 import json
 import os
+from datetime import datetime, timedelta
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -101,7 +102,8 @@ def test_parse_asks_for_json_with_a_schema_at_zero_temperature(gemini):
     assert call.config.temperature == 0
     assert call.config.response_mime_type == "application/json"
     assert set(call.config.response_json_schema["required"]) == {
-        "depart_time", "destination_text", "avoid_stairs", "stated_age", "heat_sensitivity"
+        "depart_time", "leave_in_minutes", "destination_text", "avoid_stairs",
+        "stated_age", "heat_sensitivity",
     }
 
 
@@ -127,9 +129,33 @@ def test_parse_trims_the_destination(gemini):
 
 
 def model_json(**fields):
-    base = {"depart_time": None, "destination_text": None, "avoid_stairs": False,
-            "stated_age": None, "heat_sensitivity": "normal"}
+    base = {"depart_time": None, "leave_in_minutes": None, "destination_text": None,
+            "avoid_stairs": False, "stated_age": None, "heat_sensitivity": "normal"}
     return json.dumps({**base, **fields})
+
+
+@pytest.mark.parametrize(
+    "model_fields, expected",
+    [
+        ({"leave_in_minutes": 60}, "15:10"),  # "leave in an hour"
+        ({"leave_in_minutes": 0}, "14:10"),  # "leave now"
+        ({"leave_in_minutes": 600}, "00:10"),  # wraps past midnight
+        ({"leave_in_minutes": 60, "depart_time": "09:00"}, "09:00"),  # clock time wins
+        ({"leave_in_minutes": -30}, None),
+        ({"leave_in_minutes": 5000}, None),
+        ({"leave_in_minutes": "60"}, None),
+    ],
+)
+def test_relative_time_uses_the_tempe_clock(gemini, monkeypatch, model_fields, expected):
+    monkeypatch.setattr(
+        service, "_now", lambda: datetime(2026, 11, 14, 14, 10, tzinfo=service.TEMPE_TZ)
+    )
+    gemini.reply = model_json(**model_fields)
+    assert service.parse_request(ParseRequest(text="leave in an hour")).depart_time == expected
+
+
+def test_tempe_clock_is_utc_minus_7():
+    assert service._now().utcoffset() == timedelta(hours=-7)
 
 
 @pytest.mark.parametrize(
