@@ -419,6 +419,33 @@ def test_complete_natural_sentences_are_kept(gemini, reply):
     assert service.explain_route(explain_req()).text == reply
 
 
+# Cost: one short call per request.
+
+
+def test_parse_makes_exactly_one_call(gemini):
+    gemini.reply = model_json(stated_age=78, leave_in_minutes=60)
+    service.parse_request(ParseRequest(text="I'm 78, leave in an hour"))
+    assert len(gemini.calls) == 1
+
+
+@pytest.mark.parametrize("reply", ["The cooler route is 64% shaded.", "It is 42% cooler."])
+def test_explain_makes_one_call_even_when_falling_back(gemini, reply):
+    gemini.reply = reply
+    service.explain_route(explain_req())
+    assert len(gemini.calls) == 1
+
+
+def test_explain_never_sends_the_route_geometry(gemini):
+    def long_route(route):
+        route["coolest"]["geometry"] = [[33.41 + i / 10000, -111.93] for i in range(500)]
+
+    gemini.reply = "The cooler route is 64% shaded."
+    service.explain_route(explain_req(long_route))
+    prompt = gemini.calls[0].contents
+    assert "33.41" not in prompt and "-111.93" not in prompt
+    assert len(prompt) < 600
+
+
 # Errors: every Gemini failure becomes a short UpstreamError without the key.
 
 
