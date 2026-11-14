@@ -5,6 +5,8 @@ interface Props {
   route: RouteResponse
   shadeWeight: number
   loading: boolean
+  /** Optional plain-English summary; null when unavailable. */
+  explanation?: string | null
   onShadeChange: (weight: number) => void
   /** Called when the person lets go of the slider: re-request the route. */
   onShadeCommit: () => void
@@ -53,6 +55,7 @@ export default function ComparisonCard({
   route,
   shadeWeight,
   loading,
+  explanation,
   onShadeChange,
   onShadeCommit,
 }: Props) {
@@ -71,6 +74,7 @@ export default function ComparisonCard({
         <Column option={fastest} label="Fastest" color={FASTEST_COLOR} />
         <Column option={coolest} label="Coolest" color={COOLEST_COLOR} />
       </div>
+      {explanation && <p className="text-sm">{explanation}</p>}
       {coolest.stairs_count > 0 && (
         <p className="text-sm">Coolest route has {coolest.stairs_count} steps.</p>
       )}

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { api, USE_MOCKS } from './api'
+import AskBox from './components/AskBox'
 import HelpNow from './components/HelpNow'
 import RouteForm from './components/RouteForm'
 import { DEFAULT_TIME, buildRequest, type FormValue, type PickTarget } from './form'
@@ -9,6 +10,7 @@ import SampleBadge from './components/SampleBadge'
 import {
   DEFAULT_PREFS,
   type LatLng,
+  type ParseResponse,
   type Resource,
   type RouteRequest,
   type RouteResponse,
@@ -30,6 +32,7 @@ export default function App() {
   const [tab, setTab] = useState<'route' | 'help'>('route')
   const [resources, setResources] = useState<Resource[]>([])
   const [route, setRoute] = useState<RouteResponse | null>(null)
+  const [explanation, setExplanation] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -59,15 +62,37 @@ export default function App() {
     if (req) findRoute(req)
   }
 
+  const applyParsed = (p: ParseResponse) =>
+    setForm((f) => ({
+      ...f,
+      departTime: /^\d{2}:\d{2}$/.test(p.depart_time ?? '')
+        ? (p.depart_time as string)
+        : f.departTime,
+      prefs: {
+        ...f.prefs,
+        avoid_stairs: p.prefs.avoid_stairs,
+        heat_sensitivity: p.prefs.heat_sensitivity,
+      },
+    }))
+
   const findRoute = (req: RouteRequest) => {
     setLoading(true)
     setError(null)
+    setExplanation(null)
     api
       .route(req)
       .then((r) => {
         // Bring the first result into view above the form.
         if (!route) panelRef.current?.scrollTo({ top: 0 })
         setRoute(r)
+        // The explanation is optional: if it fails, the app works without it.
+        // Never ask for one on sample data.
+        if (!USE_MOCKS) {
+          api
+            .explain(r, req.prefs)
+            .then((x) => setExplanation(x.text))
+            .catch(() => {})
+        }
       })
       .catch(() => {
         setRoute(null)
@@ -127,12 +152,14 @@ export default function App() {
             route={route}
             shadeWeight={form.prefs.shade_weight}
             loading={loading}
+            explanation={explanation}
             onShadeChange={(w) =>
               setForm((f) => ({ ...f, prefs: { ...f.prefs, shade_weight: w } }))
             }
             onShadeCommit={() => request && findRoute(request)}
           />
         )}
+        <AskBox onParsed={applyParsed} />
         <RouteForm
           value={form}
           onChange={setForm}
