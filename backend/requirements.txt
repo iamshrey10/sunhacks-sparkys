@@ -5,4 +5,6 @@ pydantic>=2
 httpx>=0.27
 python-dotenv>=1.0
 google-genai>=1.0
+# Windows has no system time-zone database; zoneinfo("America/Phoenix") needs this.
+tzdata>=2024.1
 pytest>=8
