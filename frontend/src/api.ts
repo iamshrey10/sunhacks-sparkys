@@ -7,8 +7,16 @@ import type {
   RouteRequest,
   RouteResponse,
 } from './types'
+import routeSample from './mocks/route_response.sample.json'
+import resourcesSample from './mocks/resources_response.sample.json'
 
 const BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:8000'
+
+/** When true, route and resources come from bundled sample data. */
+export const USE_MOCKS = import.meta.env.VITE_USE_MOCKS === 'true'
+
+const mock = <T>(data: unknown) =>
+  new Promise<T>((resolve) => setTimeout(() => resolve(data as T), 300))
 
 export class ApiError extends Error {
   status: number
@@ -45,11 +53,16 @@ export const api = {
       gemini_configured: boolean
       tinyfish_configured: boolean
     }>('/health'),
-  route: (req: RouteRequest) => post<RouteResponse>('/route', req),
+  route: (req: RouteRequest) =>
+    USE_MOCKS
+      ? mock<RouteResponse>(routeSample)
+      : post<RouteResponse>('/route', req),
   resources: (center: LatLng, radiusM = 1500) =>
-    request<ResourcesResponse>(
-      `/resources?lat=${center.lat}&lng=${center.lng}&radius_m=${radiusM}`,
-    ),
+    USE_MOCKS
+      ? mock<ResourcesResponse>(resourcesSample)
+      : request<ResourcesResponse>(
+          `/resources?lat=${center.lat}&lng=${center.lng}&radius_m=${radiusM}`,
+        ),
   parse: (text: string) => post<ParseResponse>('/parse', { text }),
   explain: (route: RouteResponse, prefs: Prefs) =>
     post<ExplainResponse>('/explain', { route, prefs }),
