@@ -2,8 +2,11 @@ import { useEffect, useRef, useState } from 'react'
 import { api, USE_MOCKS } from './api'
 import AskBox from './components/AskBox'
 import FloatingSearch from './components/FloatingSearch'
+import LayersControl from './components/LayersControl'
+import { useMapPrefs } from './hooks/useMapPrefs'
 import { useRecents, type Recent } from './hooks/useRecents'
 import { useSearch } from './hooks/useSearch'
+import { BASE_LAYERS } from './mapLayers'
 import { searchPlaces, type PlaceResult } from './search'
 import HelpNow from './components/HelpNow'
 import RouteForm from './components/RouteForm'
@@ -74,6 +77,9 @@ export default function App() {
   const [resources, setResources] = useState<Resource[]>([])
   const search = useSearch(resources)
   const [recents, addRecent] = useRecents()
+  const [mapPrefs, setMapPrefs] = useMapPrefs()
+  const [mapNotice, setMapNotice] = useState<string | null>(null)
+  const satellite = mapPrefs.type === 'satellite'
   const [searching, setSearching] = useState(false)
   const [focus, setFocus] = useState<{ point: LatLng; id: number } | null>(null)
   // Friendly names for points chosen by search or location, instead of coordinates.
@@ -97,6 +103,27 @@ export default function App() {
   }, [])
 
   const request = buildRequest(form)
+
+  // A map notice goes away by itself after a few seconds.
+  useEffect(() => {
+    if (!mapNotice) return
+    const id = window.setTimeout(() => setMapNotice(null), 7000)
+    return () => window.clearTimeout(id)
+  }, [mapNotice])
+
+  /** Tiles could not load: fall back for now, without overwriting the saved choice. */
+  const onTileFailure = (layer: 'base' | 'labels') => {
+    if (layer === 'base') {
+      if (mapPrefs.type === 'standard') return
+      setMapPrefs({ ...mapPrefs, type: 'standard' }, { save: false })
+      setMapNotice(
+        `We could not load the ${BASE_LAYERS[mapPrefs.type].label} map, so we switched to Standard.`,
+      )
+    } else {
+      setMapPrefs({ ...mapPrefs, labels: false }, { save: false })
+      setMapNotice('Map labels could not load, so they are hidden.')
+    }
+  }
 
   const handleMapClick = (point: LatLng) => {
     if (!picking) return
@@ -285,10 +312,12 @@ export default function App() {
           picking={picking}
           onMapClick={handleMapClick}
           route={tab === 'route' ? route : null}
-          resources={tab === 'help' ? resources : []}
+          resources={tab === 'help' && mapPrefs.spots ? resources : []}
           topPad={TOP_PAD}
           bottomPad={sheetPx}
           focus={focus}
+          mapPrefs={mapPrefs}
+          onTileFailure={onTileFailure}
         />
       </div>
 
@@ -327,7 +356,10 @@ export default function App() {
           startPicking('end')
         }}
         inputRef={searchInput}
+        strong={satellite}
       />
+
+      <LayersControl prefs={mapPrefs} onChange={setMapPrefs} strong={satellite} />
 
       <BottomSheet
         snap={snap}
@@ -376,6 +408,14 @@ export default function App() {
           </div>
         )}
       </BottomSheet>
+
+      {mapNotice && (
+        <Toast
+          message={mapNotice}
+          bottom={sheetPx + (error ? 84 : 0)}
+          onDismiss={() => setMapNotice(null)}
+        />
+      )}
 
       {error && (
         <Toast
