@@ -7,8 +7,8 @@ import { DEFAULT_TIME, buildRequest, type FormValue, type PickTarget } from './f
 import ComparisonCard from './components/ComparisonCard'
 import RouteMap from './components/RouteMap'
 import SampleBadge from './components/SampleBadge'
+import { usePrefs } from './hooks/usePrefs'
 import {
-  DEFAULT_PREFS,
   type LatLng,
   type ParseResponse,
   type Resource,
@@ -22,12 +22,19 @@ export default function App() {
   const [apiState, setApiState] = useState<ApiState>(
     USE_MOCKS ? 'offline' : 'checking',
   )
-  const [form, setForm] = useState<FormValue>({
+  const [prefs, setPrefs] = usePrefs()
+  const [trip, setTrip] = useState<Omit<FormValue, 'prefs'>>({
     start: null,
     end: null,
     departTime: DEFAULT_TIME,
-    prefs: DEFAULT_PREFS,
   })
+  const form: FormValue = { ...trip, prefs }
+  // Trip details reset on reload; preferences are saved on this device.
+  const setForm = (update: FormValue | ((f: FormValue) => FormValue)) => {
+    const next = typeof update === 'function' ? update(form) : update
+    setTrip({ start: next.start, end: next.end, departTime: next.departTime })
+    setPrefs(next.prefs)
+  }
   const [picking, setPicking] = useState<PickTarget | null>(null)
   const [tab, setTab] = useState<'route' | 'help'>('route')
   const [resources, setResources] = useState<Resource[]>([])
