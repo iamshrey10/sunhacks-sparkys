@@ -46,6 +46,8 @@ interface Props {
   /** "No match" shortcut: let the person tap the map instead. */
   onChooseOnMap: () => void
   inputRef: RefObject<HTMLInputElement | null>
+  /** Higher glass opacity, for readability over satellite imagery. */
+  strong?: boolean
 }
 
 function Highlighted({
@@ -86,6 +88,7 @@ export default function FloatingSearch({
   onChoose,
   onChooseOnMap,
   inputRef,
+  strong = false,
 }: Props) {
   const listboxId = useId()
   const wrapRef = useRef<HTMLDivElement>(null)
@@ -136,7 +139,7 @@ export default function FloatingSearch({
     >
       <div
         data-search-surface
-        className="glass pointer-events-auto flex min-h-12 items-center gap-2 rounded-xl px-4 focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-focus"
+        className={`glass ${strong ? 'glass-strong' : ''} pointer-events-auto flex min-h-12 items-center gap-2 rounded-xl px-4 focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-focus`}
       >
         <Search size={20} className="shrink-0 text-ink" aria-hidden="true" />
         <input
@@ -180,7 +183,7 @@ export default function FloatingSearch({
       {(showList || showEmpty || showHelp) && (
         <div
           data-search-surface
-          className="glass pointer-events-auto max-h-[40dvh] overflow-y-auto overscroll-contain rounded-xl p-2"
+          className={`glass ${strong ? 'glass-strong' : ''} pointer-events-auto max-h-[40dvh] overflow-y-auto overscroll-contain rounded-xl p-2`}
           style={{ touchAction: 'pan-y', WebkitOverflowScrolling: 'touch' }}
         >
           {showList && (

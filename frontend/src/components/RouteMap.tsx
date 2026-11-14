@@ -1,14 +1,24 @@
-import { useEffect, useRef } from 'react'
+import L from 'leaflet'
+import { useEffect, useMemo, useRef } from 'react'
 import {
   CircleMarker,
   MapContainer,
+  Marker,
   Polyline,
   Tooltip,
   TileLayer,
   useMap,
   useMapEvents,
+  type TileLayerProps,
 } from 'react-leaflet'
 import { COOLEST_TOKEN, FASTEST_TOKEN, token } from '../colors'
+import { PLACES } from '../data/places'
+import {
+  BASE_LAYERS,
+  SATELLITE_LABELS,
+  type MapPrefs,
+  type TileSpec,
+} from '../mapLayers'
 import type { LatLng, Resource, RouteResponse } from '../types'
 
 // ASU Tempe campus.
@@ -27,6 +37,10 @@ interface Props {
   bottomPad: number
   /** Pan here (in the part of the map not covered by the sheet) when it changes. */
   focus?: { point: LatLng; id: number } | null
+  /** Which tiles to draw and which details to show. */
+  mapPrefs: MapPrefs
+  /** Called when the chosen tiles (or the labels overlay) cannot be loaded. */
+  onTileFailure: (layer: 'base' | 'labels') => void
 }
 
 /**
@@ -35,16 +49,20 @@ interface Props {
  */
 function FitRoute({
   route,
+  bothRoutes,
   topPad,
   bottomPad,
 }: {
   route: RouteResponse
+  bothRoutes: boolean
   topPad: number
   bottomPad: number
 }) {
   const map = useMap()
   useEffect(() => {
-    const points = [...route.fastest.geometry, ...route.coolest.geometry]
+    const points = bothRoutes
+      ? [...route.fastest.geometry, ...route.coolest.geometry]
+      : route.coolest.geometry
     if (!points.length) return
     // Never reserve more than most of the map, or the route would shrink to a dot.
     const cap = map.getSize().y * 0.6
@@ -52,7 +70,7 @@ function FitRoute({
       paddingTopLeft: [24, Math.min(topPad, cap / 2) + 16],
       paddingBottomRight: [24, Math.min(bottomPad, cap) + 16],
     })
-  }, [map, route, topPad, bottomPad])
+  }, [map, route, bothRoutes, topPad, bottomPad])
   return null
 }
 
@@ -96,6 +114,77 @@ function SizeSync({ settledKey }: { settledKey: number }) {
   return null
 }
 
+/**
+ * A tile layer that reports when it clearly cannot load: three failures before
+ * a single tile has arrived. One flaky tile does not count. Remount it (via
+ * `key`) to reset the count.
+ */
+function GuardedTiles({
+  spec,
+  onFail,
+  zIndex,
+}: {
+  spec: TileSpec
+  onFail: () => void
+  zIndex?: TileLayerProps['zIndex']
+}) {
+  const stats = useRef({ ok: 0, errors: 0, failed: false })
+  return (
+    <TileLayer
+      url={spec.url}
+      attribution={spec.attribution}
+      maxZoom={spec.maxZoom}
+      className={spec.className}
+      zIndex={zIndex}
+      eventHandlers={{
+        tileload: () => {
+          stats.current.ok += 1
+        },
+        tileerror: () => {
+          const s = stats.current
+          s.errors += 1
+          if (!s.failed && s.ok === 0 && s.errors >= 3) {
+            s.failed = true
+            onFail()
+          }
+        },
+      }}
+    />
+  )
+}
+
+/**
+ * Names of the known places, drawn as outlined text over the satellite imagery
+ * (the street-name layers are sparse around campus). Not clickable.
+ */
+function PlaceLabels() {
+  const icons = useMemo(
+    () =>
+      PLACES.map((p) => ({
+        place: p,
+        icon: L.divIcon({
+          className: 'place-label',
+          html: `<span>${p.name.replace(/[<>&"]/g, '')}</span>`,
+          iconSize: [0, 0],
+        }),
+      })),
+    [],
+  )
+  return (
+    <>
+      {icons.map(({ place, icon }) => (
+        <Marker
+          key={place.id}
+          position={[place.lat, place.lng]}
+          icon={icon}
+          interactive={false}
+          keyboard={false}
+        />
+      ))}
+    </>
+  )
+}
+
 function ClickHandler({ onMapClick }: Pick<Props, 'onMapClick'>) {
   useMapEvents({
     click: (e) => onMapClick({ lat: e.latlng.lat, lng: e.latlng.lng }),
@@ -120,7 +209,11 @@ export default function RouteMap({
   topPad,
   bottomPad,
   focus,
+  mapPrefs,
+  onTileFailure,
 }: Props) {
+  const satellite = mapPrefs.type === 'satellite'
+  const base = BASE_LAYERS[mapPrefs.type]
   return (
     <div
       className={`h-full w-full ${picking ? 'cursor-crosshair' : ''}`}
@@ -134,32 +227,62 @@ export default function RouteMap({
         className="h-full w-full"
         zoomControl={false}
       >
-        <TileLayer
-          attribution="&copy; OpenStreetMap contributors"
-          url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+        {/* Only the active tile layer is mounted, so the attribution follows it. */}
+        <GuardedTiles
+          key={mapPrefs.type}
+          spec={base}
+          onFail={() => onTileFailure('base')}
         />
+        {satellite &&
+          mapPrefs.labels &&
+          SATELLITE_LABELS.map((spec) => (
+            <GuardedTiles
+              key={spec.url}
+              spec={spec}
+              zIndex={5}
+              onFail={() => onTileFailure('labels')}
+            />
+          ))}
+        {satellite && mapPrefs.labels && <PlaceLabels />}
         <SizeSync settledKey={bottomPad} />
         {focus && <FocusPoint focus={focus} topPad={topPad} bottomPad={bottomPad} />}
         <ClickHandler onMapClick={picking ? onMapClick : () => {}} />
         {route && (
           <>
-            <FitRoute route={route} topPad={topPad} bottomPad={bottomPad} />
-            <Polyline
-              positions={route.fastest.geometry}
-              pathOptions={{ color: token('white'), weight: 8, opacity: 0.9 }}
+            <FitRoute
+              route={route}
+              bothRoutes={mapPrefs.bothRoutes}
+              topPad={topPad}
+              bottomPad={bottomPad}
             />
-            <Polyline
-              positions={route.fastest.geometry}
-              pathOptions={{
-                color: token(FASTEST_TOKEN),
-                weight: 4,
-                opacity: 1,
-                dashArray: '8 8',
-              }}
-            />
+            {mapPrefs.bothRoutes && (
+              <>
+                <Polyline
+                  positions={route.fastest.geometry}
+                  pathOptions={{
+                    color: token('white'),
+                    weight: 8,
+                    opacity: satellite ? 1 : 0.9,
+                  }}
+                />
+                <Polyline
+                  positions={route.fastest.geometry}
+                  pathOptions={{
+                    color: token(FASTEST_TOKEN),
+                    weight: 4,
+                    opacity: 1,
+                    dashArray: '8 8',
+                  }}
+                />
+              </>
+            )}
             <Polyline
               positions={route.coolest.geometry}
-              pathOptions={{ color: token('white'), weight: 11, opacity: 0.95 }}
+              pathOptions={{
+                color: token('white'),
+                weight: 11,
+                opacity: satellite ? 1 : 0.95,
+              }}
             />
             <Polyline
               positions={route.coolest.geometry}
