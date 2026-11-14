@@ -170,7 +170,7 @@ export default function RouteForm({
       <button
         type="submit"
         disabled={!request || loading}
-        className="min-h-12 w-full rounded-lg bg-periwinkle border border-cool text-base font-bold text-ink shadow-card disabled:border-sky disabled:bg-sky disabled:text-muted"
+        className="min-h-12 w-full rounded-lg bg-periwinkle border border-cool text-base font-bold text-ink shadow-card disabled:border-sky disabled:bg-sky disabled:text-ink"
       >
         {loading ? 'Finding route…' : 'Find cool route'}
       </button>

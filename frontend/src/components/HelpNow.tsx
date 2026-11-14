@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { api } from '../api'
+import { ListSkeleton } from './Skeleton'
 import type { LatLng, Resource } from '../types'
 
 // Used only when the device cannot share its location; we say so on screen.
@@ -76,7 +77,7 @@ export default function HelpNow({ onResources, resources, onWalk }: Props) {
         type="button"
         onClick={find}
         disabled={busy}
-        className="min-h-16 w-full rounded-lg bg-periwinkle border border-cool text-lg font-bold text-ink shadow-card disabled:border-sky disabled:bg-sky disabled:text-muted"
+        className="min-h-16 w-full rounded-lg bg-periwinkle border border-cool text-lg font-bold text-ink shadow-card disabled:border-sky disabled:bg-sky disabled:text-ink"
       >
         {status === 'locating'
           ? 'Finding your location…'
@@ -92,10 +93,23 @@ export default function HelpNow({ onResources, resources, onWalk }: Props) {
         </p>
       )}
       {status === 'error' && (
-        <p role="alert" className="font-medium text-error-ink">
-          We could not load nearby spots right now. Please try again.
-        </p>
+        <div
+          role="alert"
+          className="flex items-center gap-2 rounded-lg border border-error-ink/30 bg-error p-2 pl-4 text-error-ink"
+        >
+          <p className="min-w-0 flex-1 text-sm font-semibold">
+            We could not load nearby spots right now.
+          </p>
+          <button
+            type="button"
+            onClick={find}
+            className="min-h-11 shrink-0 rounded-md border border-error-ink bg-white px-4 text-sm font-bold text-error-ink"
+          >
+            Retry
+          </button>
+        </div>
       )}
+      {busy && resources.length === 0 && <ListSkeleton />}
       {status === 'done' && resources.length === 0 && (
         <p>No water or cooling spots found nearby.</p>
       )}

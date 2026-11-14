@@ -10,6 +10,8 @@ import RouteForm from './components/RouteForm'
 import { DEFAULT_TIME, buildRequest, type FormValue, type PickTarget } from './form'
 import BottomSheet, { type Snap } from './components/BottomSheet'
 import ComparisonCard from './components/ComparisonCard'
+import { RouteSkeleton } from './components/Skeleton'
+import Toast from './components/Toast'
 import RouteMap from './components/RouteMap'
 import SampleBadge from './components/SampleBadge'
 import { summaryText } from './routeSummary'
@@ -126,8 +128,12 @@ export default function App() {
       },
     }))
 
+  // What Retry should run again after a failed request.
+  const lastRequest = useRef<RouteRequest | null>(null)
+
   const findRoute = (req: RouteRequest) => {
     if (endOutside) return
+    lastRequest.current = req
     setLoading(true)
     setError(null)
     setExplanation(null)
@@ -179,7 +185,7 @@ export default function App() {
           type="button"
           disabled={loading}
           onClick={() => findRoute(request)}
-          className="min-h-11 w-full rounded-lg bg-periwinkle border border-cool text-base font-bold text-ink shadow-card disabled:border-sky disabled:bg-sky disabled:text-muted"
+          className="min-h-11 w-full rounded-lg bg-periwinkle border border-cool text-base font-bold text-ink shadow-card disabled:border-sky disabled:bg-sky disabled:text-ink"
         >
           {loading ? 'Finding route…' : 'Find cool route'}
         </button>
@@ -343,6 +349,7 @@ export default function App() {
           />
         ) : (
           <div className="pt-1">
+            {loading && !route && <RouteSkeleton />}
             {route && (
               <ComparisonCard
                 route={route}
@@ -366,14 +373,23 @@ export default function App() {
               labels={labels}
               notice={endOutside ? OUTSIDE_MESSAGE : undefined}
             />
-            {error && (
-              <p role="alert" className="mt-3 font-medium text-error-ink">
-                {error}
-              </p>
-            )}
           </div>
         )}
       </BottomSheet>
+
+      {error && (
+        <Toast
+          message={error}
+          actionLabel="Retry"
+          bottom={sheetPx}
+          onAction={() => {
+            const req = lastRequest.current
+            setError(null)
+            if (req) findRoute(req)
+          }}
+          onDismiss={() => setError(null)}
+        />
+      )}
     </div>
   )
 }
