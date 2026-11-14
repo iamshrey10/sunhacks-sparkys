@@ -57,8 +57,9 @@ You do not need the backend running to start. Build on sample data first.
 
 **Task 4: Help now screen.** `frontend/src/components/HelpNow.tsx`. A big button, the
 nearest water and cooling spots on the map and in a list, with badges "open now",
-"closed" or **"hours unknown"** (when `open_now` is `null`; never guess). Use sample
-data until Shreyas's `/resources` works.
+"closed" or **"hours unknown"** (when `open_now` is `null`; never guess). Use
+`docs/samples/resources_response.sample.json` (copy it into `src/mocks/`, same
+"SAMPLE DATA" badge rule) until Shreyas's `/resources` works.
 
 **Task 5: plain-English box.** `frontend/src/components/AskBox.tsx`. The user types
 "3 PM, avoid stairs"; call `api.parse`, fill the form, then show `api.explain` under
