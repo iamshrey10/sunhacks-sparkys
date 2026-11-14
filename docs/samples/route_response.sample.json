@@ -1,0 +1,33 @@
+{
+  "fastest": {
+    "kind": "fastest",
+    "geometry": [
+      [33.4166, -111.934],
+      [33.418, -111.9352],
+      [33.4198, -111.9371],
+      [33.4217, -111.94]
+    ],
+    "distance_m": 900,
+    "duration_s": 650,
+    "shade_pct": 22,
+    "sun_exposed_s": 507,
+    "stairs_count": 0
+  },
+  "coolest": {
+    "kind": "coolest",
+    "geometry": [
+      [33.4166, -111.934],
+      [33.4172, -111.9365],
+      [33.4195, -111.9385],
+      [33.4217, -111.94]
+    ],
+    "distance_m": 1010,
+    "duration_s": 730,
+    "shade_pct": 64,
+    "sun_exposed_s": 263,
+    "stairs_count": 0
+  },
+  "depart_time": "15:00",
+  "shade_layer": "15:00",
+  "source": "model"
+}
