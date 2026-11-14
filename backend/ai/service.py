@@ -174,6 +174,8 @@ Rules:
 - No medical or legal advice and no health claims. Do not mention symptoms,
   illnesses or what the walker should do for their health.
 - Never mention the walker's age or why they are sensitive to heat.
+- Never write the number 0: say "no stairs" or "no extra time" instead.
+- Say "minutes in direct sun", not "sun minutes".
 - No greetings, lists or markdown.
 """
 
@@ -197,8 +199,10 @@ def _minutes(seconds: float) -> int:
     return int(seconds / 60 + 0.5)
 
 
-def _plural(n: int, word: str) -> str:
-    return f"{n} {word}" if n == 1 else f"{n} {word}s"
+def _about_minutes(n: int) -> str:
+    if n == 0:
+        return "less than a minute"
+    return "about 1 minute" if n == 1 else f"about {n} minutes"
 
 
 def _route_facts(req: ExplainRequest) -> dict:
@@ -255,21 +259,21 @@ def _is_safe(text: str, allowed: set[float]) -> bool:
 def _template_explanation(facts: dict) -> str:
     """Fixed wording used when the model's answer fails the checks."""
     fast_shade, cool_shade = facts["fastest_shade_pct"], facts["cooler_shade_pct"]
-    fast_sun = _plural(facts["fastest_sun_minutes"], "minute")
-    cool_sun = _plural(facts["cooler_sun_minutes"], "minute")
-    extra = _plural(facts["extra_minutes"], "minute")
+    fast_sun = _about_minutes(facts["fastest_sun_minutes"])
+    cool_sun = _about_minutes(facts["cooler_sun_minutes"])
+    extra = _about_minutes(facts["extra_minutes"])
     verdict = facts["verdict"]
 
     if verdict.startswith("same route"):
         return (
             f"The fastest route is also the coolest one here: about {fast_shade}% "
-            f"shaded, with about {fast_sun} in direct sun."
+            f"shaded, with {fast_sun} in direct sun."
         )
     if verdict.startswith("not much cooler"):
         sun = (
-            f"about the same {fast_sun} in direct sun"
+            "about the same time in direct sun"
             if cool_sun == fast_sun
-            else f"about {cool_sun} in direct sun versus {fast_sun}"
+            else f"{cool_sun} in direct sun versus {fast_sun}"
         )
         return (
             f"The cooler route is not much cooler: about {cool_shade}% shaded versus "
@@ -277,12 +281,44 @@ def _template_explanation(facts: dict) -> str:
         )
     text = (
         f"The cooler route is about {cool_shade}% shaded versus {fast_shade}% "
-        f"on the fastest route, cutting time in direct sun from about {fast_sun} "
+        f"on the fastest route, cutting time in direct sun from {fast_sun} "
         f"to {cool_sun}."
     )
     if verdict.startswith("cooler but much longer"):
-        return text + f" It takes about {extra} longer, which is a real trade-off."
-    return text + f" It adds about {extra} to the walk."
+        return text + f" It takes {extra} longer, which is a real trade-off."
+    if facts["extra_minutes"] == 0:
+        return text + " It takes no longer than the fastest route."
+    return text + f" It adds {extra} to the walk."
+
+
+# Plain-English labels for the facts, so the model does not copy code names.
+FACT_LABELS = {
+    "verdict": "how to judge it",
+    "fastest_minutes": "fastest route, walking minutes",
+    "fastest_shade_pct": "fastest route, percent in shade",
+    "fastest_sun_minutes": "fastest route, minutes in direct sun",
+    "cooler_minutes": "cooler route, walking minutes",
+    "cooler_shade_pct": "cooler route, percent in shade",
+    "cooler_sun_minutes": "cooler route, minutes in direct sun",
+    "extra_minutes": "extra walking minutes on the cooler route",
+    "sun_minutes_saved": "minutes in direct sun saved by the cooler route",
+    "cooler_stairs": "stairs on the cooler route",
+    "depart_time": "leaving at",
+    "walker_heat_sensitivity": "walker's heat sensitivity",
+}
+# Stairs only matter to someone who asked to avoid them.
+STAIRS_FACTS = ("cooler_stairs",)
+
+
+def _explain_prompt(facts: dict) -> str:
+    lines = [
+        f"- {FACT_LABELS[key]}: {value}"
+        for key, value in facts.items()
+        if key in FACT_LABELS and (facts["walker_avoids_stairs"] or key not in STAIRS_FACTS)
+    ]
+    if facts["walker_avoids_stairs"]:
+        lines.append("- the walker asked to avoid stairs")
+    return "Facts:\n" + "\n".join(lines)
 
 
 def explain_route(req: ExplainRequest) -> ExplainResponse:
@@ -294,19 +330,28 @@ def explain_route(req: ExplainRequest) -> ExplainResponse:
         # write, so a small limit cuts the answer off mid-sentence.
         max_output_tokens=1024,
     )
-    prompt = "Facts:\n" + "\n".join(f"- {k}: {v}" for k, v in facts.items())
-    text = " ".join(_generate(prompt, config).split())
+    text = " ".join(_generate(_explain_prompt(facts), config).split())
 
     # The model only phrases the facts. If it cites a number that is not in the
-    # input, drifts into advice, or was cut off mid-sentence, use the fixed
-    # wording instead.
-    # Copying an internal field name (shade_pct, "shade pct", "sun minutes",
-    # verdict) reads as broken to a user.
-    leaked = any(m in text.lower() for m in ("_", "pct", "sun minutes", "verdict"))
-    if (
-        not text.endswith((".", "!", "?"))
-        or leaked
-        or not _is_safe(text, _allowed_numbers(req, facts))
-    ):
+    # input, drifts into advice, or does not read as finished prose, use the
+    # fixed wording instead.
+    if not _reads_well(text) or not _is_safe(text, _allowed_numbers(req, facts)):
         text = _template_explanation(facts)
     return ExplainResponse(text=text)
+
+
+# Copying an internal field name (shade_pct, "shade pct", "sun minutes",
+# verdict) reads as broken to a user.
+LEAKED_FIELD_WORDS = ("_", "pct", "sun minutes", "verdict")
+MAX_SENTENCES = 3
+
+
+def _reads_well(text: str) -> bool:
+    """Complete sentences, no copied field names or bare zeros, at most MAX_SENTENCES."""
+    # A cut-off answer (the token limit hit mid-sentence) has no closing mark.
+    finished = text.endswith((".", "!", "?")) and not text.endswith("..")
+    leaked = any(word in text.lower() for word in LEAKED_FIELD_WORDS)
+    # "0 stairs" or "0 extra minutes" is correct but reads like a data dump.
+    bare_zero = re.search(r"(?<![\d.:])0(?![\d.:%])", text) is not None
+    sentences = [s for s in re.split(r"(?<=[.!?])\s+", text) if s]
+    return finished and not leaked and not bare_zero and 1 <= len(sentences) <= MAX_SENTENCES

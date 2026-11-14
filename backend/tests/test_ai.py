@@ -222,12 +222,30 @@ def test_facts_from_the_sample_route():
     assert facts["sun_minutes_saved"] == 4
 
 
-@pytest.mark.parametrize("change", [None, not_much_cooler, much_longer, same_route])
-def test_template_text_cites_only_input_numbers(change):
-    req = explain_req(change)
+def fully_shaded(route):
+    route["coolest"].update(shade_pct=100, sun_exposed_s=0)
+
+
+def no_extra_time(route):
+    route["coolest"].update(duration_s=640)
+
+
+def no_shade_on_fastest(route):
+    route["fastest"].update(shade_pct=0, sun_exposed_s=650)
+
+
+EDGE_ROUTES = [None, not_much_cooler, much_longer, same_route, fully_shaded, no_extra_time,
+               no_shade_on_fastest]
+
+
+@pytest.mark.parametrize("change", EDGE_ROUTES)
+@pytest.mark.parametrize("prefs", [{}, {"heat_sensitivity": "high", "avoid_stairs": True}])
+def test_template_text_passes_every_guard(change, prefs):
+    req = explain_req(change, **prefs)
     facts = service._route_facts(req)
     text = service._template_explanation(facts)
     assert service._is_safe(text, service._allowed_numbers(req, facts))
+    assert service._reads_well(text)
 
 
 def test_template_is_honest_when_not_much_cooler():
@@ -238,6 +256,26 @@ def test_template_is_honest_when_not_much_cooler():
 def test_template_names_the_cost_when_much_longer():
     text = service._template_explanation(service._route_facts(explain_req(much_longer)))
     assert "14 minutes longer" in text
+
+
+def test_template_wording_for_zero_values():
+    shaded = service._template_explanation(service._route_facts(explain_req(fully_shaded)))
+    assert "less than a minute" in shaded
+    same_time = service._template_explanation(service._route_facts(explain_req(no_extra_time)))
+    assert "no longer than the fastest route" in same_time
+
+
+def test_prompt_uses_plain_labels_not_code_names():
+    prompt = service._explain_prompt(service._route_facts(explain_req()))
+    assert "_" not in prompt
+    assert "minutes in direct sun" in prompt
+    assert "stairs" not in prompt  # walker did not ask to avoid stairs
+
+
+def test_prompt_mentions_stairs_only_when_the_walker_avoids_them():
+    prompt = service._explain_prompt(service._route_facts(explain_req(avoid_stairs=True)))
+    assert "stairs on the cooler route: 0" in prompt
+    assert "the walker asked to avoid stairs" in prompt
 
 
 # explain_route: checking the model's text
@@ -276,6 +314,109 @@ def test_explain_falls_back_to_template_on_bad_model_text(gemini, reply):
     req = explain_req()
     text = service.explain_route(req).text
     assert text == service._template_explanation(service._route_facts(req))
+
+
+# The three guards Shreyas added to explain_route.
+
+
+def test_client_pins_the_v1beta_api(gemini, monkeypatch):
+    seen = []
+    monkeypatch.setattr(
+        service.genai, "Client", lambda api_key, http_options: seen.append(http_options)
+        or gemini.client(api_key, http_options),
+    )
+    gemini.reply = "The cooler route is 64% shaded."
+    service.explain_route(explain_req())
+    assert seen[0].api_version == "v1beta"
+    assert seen[0].timeout == service.TIMEOUT_MS
+    assert 429 not in seen[0].retry_options.http_status_codes
+
+
+def test_token_limit_leaves_room_for_thinking(gemini):
+    gemini.reply = "The cooler route is 64% shaded."
+    service.explain_route(explain_req())
+    assert gemini.calls[0].config.max_output_tokens >= 1024
+
+
+@pytest.mark.parametrize(
+    "reply",
+    [
+        "The cooler route is 64% shaded and saves",
+        "The cooler route is 64% shaded,",
+        "The cooler route is 64% shaded and...",
+        "The cooler route is 64% shaded and…",
+        "The cooler route is 64% shaded and saves about 4",
+    ],
+)
+def test_cut_off_explanation_is_replaced(gemini, reply):
+    gemini.reply = reply
+    req = explain_req()
+    assert service.explain_route(req).text == service._template_explanation(
+        service._route_facts(req)
+    )
+
+
+@pytest.mark.parametrize(
+    "reply",
+    [
+        "The cooler_minutes value is 12.",
+        "Shade goes from 22 pct to 64 pct.",
+        "The verdict is clearly cooler for a small extra walk.",
+        "You save 4 sun minutes on the cooler route.",
+        "Fastest Shade Pct is 22, cooler is 64.",
+    ],
+)
+def test_leaked_field_names_are_replaced(gemini, reply):
+    gemini.reply = reply
+    req = explain_req()
+    assert service.explain_route(req).text == service._template_explanation(
+        service._route_facts(req)
+    )
+
+
+@pytest.mark.parametrize(
+    "reply",
+    [
+        "The cooler route is 64% shaded, with 0 stairs.",
+        "It adds 0 extra minutes and is 64% shaded.",
+    ],
+)
+def test_bare_zero_is_replaced(gemini, reply):
+    gemini.reply = reply
+    req = explain_req()
+    assert service.explain_route(req).text == service._template_explanation(
+        service._route_facts(req)
+    )
+
+
+def test_zero_percent_and_clock_times_are_fine(gemini):
+    gemini.reply = "Leaving at 15:00, the fastest route has 0% shade and the cooler one 64%."
+    assert service.explain_route(explain_req(no_shade_on_fastest)).text == gemini.reply
+
+
+def test_more_than_three_sentences_is_replaced(gemini):
+    gemini.reply = (
+        "The cooler route takes 12 minutes. It is 64% shaded. The fastest is 22% shaded. "
+        "It saves 4 minutes in direct sun."
+    )
+    req = explain_req()
+    assert service.explain_route(req).text == service._template_explanation(
+        service._route_facts(req)
+    )
+
+
+@pytest.mark.parametrize(
+    "reply",
+    [
+        "The cooler route is 64% shaded!",
+        "Want more shade? The cooler route is 64% shaded and adds about 1 minute.",
+        "The cooler route takes 12 minutes instead of 11. It is 64% shaded versus 22%. "
+        "That saves about 4 minutes in direct sun.",
+    ],
+)
+def test_complete_natural_sentences_are_kept(gemini, reply):
+    gemini.reply = reply
+    assert service.explain_route(explain_req()).text == reply
 
 
 # Errors: every Gemini failure becomes a short UpstreamError without the key.
