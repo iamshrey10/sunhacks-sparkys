@@ -30,7 +30,7 @@ function Column({
     >
       <div className="font-bold">{label}</div>
       <div className="mt-1 text-3xl font-extrabold text-sky-950">
-        {option.shade_pct}
+        {Math.round(option.shade_pct)}
         <span className="text-base font-bold">% shade</span>
       </div>
       <div
@@ -39,7 +39,7 @@ function Column({
       >
         <div
           className="h-full rounded-full"
-          style={{ width: `${option.shade_pct}%`, background: color }}
+          style={{ width: `${Math.round(option.shade_pct)}%`, background: color }}
         />
       </div>
       <dl className="mt-2 text-sm">
