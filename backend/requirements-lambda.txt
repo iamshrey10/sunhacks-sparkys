@@ -1,0 +1,8 @@
+# What the Lambda package needs (no test tools). Built by scripts/build_lambda.sh.
+fastapi>=0.115
+pydantic>=2
+httpx>=0.27
+python-dotenv>=1.0
+google-genai>=1.0
+tzdata>=2024.1
+mangum>=0.17
