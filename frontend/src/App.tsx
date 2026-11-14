@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { api, USE_MOCKS } from './api'
 import RouteForm from './components/RouteForm'
-import { DEFAULT_TIME, type FormValue, type PickTarget } from './form'
+import { DEFAULT_TIME, buildRequest, type FormValue, type PickTarget } from './form'
+import ComparisonCard from './components/ComparisonCard'
 import RouteMap from './components/RouteMap'
 import SampleBadge from './components/SampleBadge'
 import {
@@ -36,6 +37,9 @@ export default function App() {
       .catch(() => setApiState('offline'))
   }, [])
 
+  const panelRef = useRef<HTMLElement>(null)
+  const request = buildRequest(form)
+
   const handleMapClick = (point: LatLng) => {
     if (!picking) return
     setForm((f) => ({ ...f, [picking]: point }))
@@ -48,7 +52,11 @@ export default function App() {
     setError(null)
     api
       .route(req)
-      .then(setRoute)
+      .then((r) => {
+        // Bring the first result into view above the form.
+        if (!route) panelRef.current?.scrollTo({ top: 0 })
+        setRoute(r)
+      })
       .catch(() => {
         setRoute(null)
         setError('We could not get a route right now. Please try again.')
@@ -71,9 +79,24 @@ export default function App() {
           end={form.end}
           picking={picking}
           onMapClick={handleMapClick}
+          route={route}
         />
       </main>
-      <section className="max-h-[55%] overflow-y-auto bg-white px-4 py-3 text-slate-900 shadow-[0_-4px_12px_rgba(0,0,0,0.2)]">
+      <section
+        ref={panelRef}
+        className="max-h-[55%] overflow-y-auto bg-white px-4 py-3 text-slate-900 shadow-[0_-4px_12px_rgba(0,0,0,0.2)]"
+      >
+        {route && (
+          <ComparisonCard
+            route={route}
+            shadeWeight={form.prefs.shade_weight}
+            loading={loading}
+            onShadeChange={(w) =>
+              setForm((f) => ({ ...f, prefs: { ...f.prefs, shade_weight: w } }))
+            }
+            onShadeCommit={() => request && findRoute(request)}
+          />
+        )}
         <RouteForm
           value={form}
           onChange={setForm}
@@ -85,13 +108,6 @@ export default function App() {
         {error && (
           <p role="alert" className="mt-3 font-medium text-red-800">
             {error}
-          </p>
-        )}
-        {route && (
-          <p className="mt-3 text-sm">
-            Fastest {Math.round(route.fastest.duration_s / 60)} min, coolest{' '}
-            {Math.round(route.coolest.duration_s / 60)} min (
-            {route.coolest.shade_pct}% shade)
           </p>
         )}
       </section>
