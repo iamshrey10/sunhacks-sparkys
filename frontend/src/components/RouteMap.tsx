@@ -22,15 +22,44 @@ interface Props {
   onMapClick: (point: LatLng) => void
   route?: RouteResponse | null
   resources?: Resource[]
+  /** Pixels at the top (header) and bottom (sheet) that cover the map. */
+  topPad: number
+  bottomPad: number
 }
 
-/** Zoom to show both routes whenever a new result arrives. */
-function FitRoute({ route }: { route: RouteResponse }) {
+/**
+ * Zoom to show both routes inside the part of the map that is not covered by
+ * the header or the sheet. Runs when a result arrives and when the sheet settles.
+ */
+function FitRoute({
+  route,
+  topPad,
+  bottomPad,
+}: {
+  route: RouteResponse
+  topPad: number
+  bottomPad: number
+}) {
   const map = useMap()
   useEffect(() => {
     const points = [...route.fastest.geometry, ...route.coolest.geometry]
-    if (points.length) map.fitBounds(points, { padding: [30, 30] })
-  }, [map, route])
+    if (!points.length) return
+    // Never reserve more than most of the map, or the route would shrink to a dot.
+    const cap = map.getSize().y * 0.6
+    map.fitBounds(points, {
+      paddingTopLeft: [24, Math.min(topPad, cap / 2) + 16],
+      paddingBottomRight: [24, Math.min(bottomPad, cap) + 16],
+    })
+  }, [map, route, topPad, bottomPad])
+  return null
+}
+
+/** Re-measure the map once the sheet stops moving (never per frame). */
+function SizeSync({ settledKey }: { settledKey: number }) {
+  const map = useMap()
+  useEffect(() => {
+    map.invalidateSize()
+  }, [map, settledKey])
   return null
 }
 
@@ -55,11 +84,15 @@ export default function RouteMap({
   onMapClick,
   route,
   resources = [],
+  topPad,
+  bottomPad,
 }: Props) {
   return (
     <div
       className={`h-full w-full ${picking ? 'cursor-crosshair' : ''}`}
       aria-label="Map of Tempe"
+      // Keeps the OpenStreetMap attribution above the sheet (see index.css).
+      style={{ '--sheet-h': `${bottomPad}px` } as React.CSSProperties}
     >
       <MapContainer
         center={TEMPE_CENTER}
@@ -71,10 +104,11 @@ export default function RouteMap({
           attribution="&copy; OpenStreetMap contributors"
           url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
+        <SizeSync settledKey={bottomPad} />
         <ClickHandler onMapClick={picking ? onMapClick : () => {}} />
         {route && (
           <>
-            <FitRoute route={route} />
+            <FitRoute route={route} topPad={topPad} bottomPad={bottomPad} />
             <Polyline
               positions={route.fastest.geometry}
               pathOptions={{ color: token('white'), weight: 8, opacity: 0.9 }}

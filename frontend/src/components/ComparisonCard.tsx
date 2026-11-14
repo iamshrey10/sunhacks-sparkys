@@ -1,3 +1,4 @@
+import { minutes } from '../routeSummary'
 import type { RouteOption, RouteResponse } from '../types'
 import { COOLEST_TOKEN, FASTEST_TOKEN, token } from '../colors'
 
@@ -11,8 +12,6 @@ interface Props {
   /** Called when the person lets go of the slider: re-request the route. */
   onShadeCommit: () => void
 }
-
-const minutes = (s: number) => Math.round(s / 60)
 
 function Column({
   option,
@@ -64,16 +63,9 @@ export default function ComparisonCard({
   onShadeCommit,
 }: Props) {
   const { fastest, coolest } = route
-  const extra = minutes(coolest.duration_s) - minutes(fastest.duration_s)
-  const sunSaved = minutes(fastest.sun_exposed_s) - minutes(coolest.sun_exposed_s)
-  const extraText =
-    extra > 0 ? `+${extra} min` : extra < 0 ? `${extra} min` : 'same time'
 
   return (
     <section aria-label="Route comparison" className="mb-3 space-y-2">
-      <p className="rounded-lg bg-ice px-3 py-2 text-base font-bold text-deep">
-        Coolest route: {extraText}, {sunSaved} min less in the sun
-      </p>
       <div className="flex gap-2">
         <Column option={fastest} label="Fastest" color={token(FASTEST_TOKEN)} />
         <Column option={coolest} label="Coolest" color={token(COOLEST_TOKEN)} />
