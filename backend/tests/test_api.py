@@ -18,9 +18,16 @@ def test_health():
 
 
 def test_unimplemented_endpoints_say_so_instead_of_faking():
-    assert client.post("/route", json=ROUTE_BODY).status_code == 501
-    assert client.get("/resources", params={"lat": 33.42, "lng": -111.93}).status_code == 501
     assert client.post("/parse", json={"text": "3 PM avoid stairs"}).status_code == 501
+
+
+def test_resources_returns_sourced_items_sorted_by_distance():
+    r = client.get("/resources", params={"lat": 33.4166, "lng": -111.9340, "radius_m": 1500})
+    assert r.status_code == 200
+    items = r.json()["resources"]
+    assert items
+    assert [i["distance_m"] for i in items] == sorted(i["distance_m"] for i in items)
+    assert all(i["source_url"] for i in items)
 
 
 def test_validation_rejects_bad_time():

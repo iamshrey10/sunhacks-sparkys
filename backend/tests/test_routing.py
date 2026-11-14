@@ -1,0 +1,113 @@
+"""Route finder tests. They run against the committed data in data/processed/."""
+
+import pytest
+from fastapi import HTTPException
+from fastapi.testclient import TestClient
+
+from backend.api.main import app
+from backend.api.schemas import RouteRequest
+from backend.routing.engine import WALK_SPEED_MPS, compute_routes, nearest_layer
+
+client = TestClient(app)
+
+# Student Pavilion to Mill Ave and University.
+START = {"lat": 33.4190, "lng": -111.9330}
+END = {"lat": 33.4217, "lng": -111.9400}
+
+
+def route(depart_time="15:00", **prefs):
+    return compute_routes(
+        RouteRequest(start=START, end=END, depart_time=depart_time, prefs=prefs)
+    )
+
+
+def test_demo_trip_gives_two_different_routes_and_coolest_is_shadier():
+    r = route("15:00")
+    assert r.fastest.kind == "fastest" and r.coolest.kind == "coolest"
+    assert r.fastest.geometry != r.coolest.geometry
+    assert r.coolest.shade_pct > r.fastest.shade_pct
+    assert r.source == "model"
+
+
+@pytest.mark.parametrize("depart_time", ["09:00", "12:00", "15:00", "18:00"])
+@pytest.mark.parametrize("sensitivity", ["low", "normal", "high"])
+def test_coolest_never_has_more_sun_and_fastest_is_never_longer(depart_time, sensitivity):
+    r = route(depart_time, heat_sensitivity=sensitivity)
+    assert r.fastest.distance_m <= r.coolest.distance_m
+    assert r.coolest.sun_exposed_s <= r.fastest.sun_exposed_s
+    assert r.coolest.shade_pct >= r.fastest.shade_pct
+
+
+def test_numbers_are_consistent_with_each_other():
+    for option in (route().fastest, route().coolest):
+        assert option.duration_s == pytest.approx(option.distance_m / WALK_SPEED_MPS, abs=0.1)
+        expected_sun = option.duration_s * (1 - option.shade_pct / 100)
+        assert option.sun_exposed_s == pytest.approx(expected_sun, rel=0.01)
+        # The trip is about 720 m in a straight line.
+        assert 720 < option.distance_m < 2000
+
+
+def test_route_starts_and_ends_near_the_requested_points():
+    for option in (route().fastest, route().coolest):
+        first, last = option.geometry[0], option.geometry[-1]
+        assert first == pytest.approx((START["lat"], START["lng"]), abs=0.0005)
+        assert last == pytest.approx((END["lat"], END["lng"]), abs=0.0005)
+
+
+def test_zero_shade_weight_makes_coolest_equal_fastest():
+    r = route(shade_weight=0)
+    assert r.coolest.geometry == r.fastest.geometry
+
+
+def test_higher_heat_sensitivity_never_increases_sun_exposure():
+    exposure = [route("09:00", heat_sensitivity=s).coolest.sun_exposed_s
+                for s in ("low", "normal", "high")]
+    assert exposure[0] >= exposure[1] >= exposure[2]
+
+
+def test_avoid_stairs_removes_stairs():
+    # At 18:00 the coolest route uses a flight of stairs unless told not to.
+    assert route("18:00").coolest.stairs_count >= 1
+    r = route("18:00", avoid_stairs=True)
+    assert r.fastest.stairs_count == 0
+    assert r.coolest.stairs_count == 0
+
+
+@pytest.mark.parametrize(
+    "depart_time, layer",
+    [("00:00", "09:00"), ("09:00", "09:00"), ("10:29", "09:00"), ("10:31", "12:00"),
+     ("13:20", "12:00"), ("14:00", "15:00"), ("16:40", "18:00"), ("23:59", "18:00")],
+)
+def test_depart_time_snaps_to_nearest_layer(depart_time, layer):
+    assert nearest_layer(depart_time) == layer
+
+
+def test_response_reports_the_layer_used():
+    r = route("16:40")
+    assert r.depart_time == "16:40"
+    assert r.shade_layer == "18:00"
+
+
+def test_same_start_and_end_is_an_empty_walk():
+    r = compute_routes(RouteRequest(start=START, end=START))
+    assert r.fastest.distance_m == 0
+    assert r.coolest.distance_m == 0
+
+
+def test_point_outside_the_mapped_area_is_rejected():
+    downtown_phoenix = {"lat": 33.4484, "lng": -112.0740}
+    with pytest.raises(HTTPException) as error:
+        compute_routes(RouteRequest(start=START, end=downtown_phoenix))
+    assert error.value.status_code == 422
+
+
+def test_route_endpoint_returns_model_output():
+    body = {"start": START, "end": END, "depart_time": "15:00",
+            "prefs": {"avoid_stairs": True, "heat_sensitivity": "high", "shade_weight": 0.7}}
+    response = client.post("/route", json=body)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["source"] == "model"
+    assert data["shade_layer"] == "15:00"
+    assert data["coolest"]["shade_pct"] > data["fastest"]["shade_pct"]
+    assert data["coolest"]["stairs_count"] == 0

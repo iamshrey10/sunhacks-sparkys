@@ -1,0 +1,360 @@
+{
+ "source": "City of Tempe, Heat Relief page, read with TinyFish Fetch on 2026-11-14",
+ "note": "Heat relief sites are listed as open May 1 through Sept 30. Outside that season open_now is unknown. Holiday hours are not modelled.",
+ "sites": [
+  {
+   "id": "tempe-epiphany",
+   "name": "Church of the Epiphany (cooling center)",
+   "kind": "cooling_center",
+   "address": "2222 S. Price Road, Tempe, AZ",
+   "hours_text": "Monday-Saturday, 9 a.m. - 7 p.m.",
+   "weekly": {
+    "mon": [
+     [
+      "09:00",
+      "19:00"
+     ]
+    ],
+    "tue": [
+     [
+      "09:00",
+      "19:00"
+     ]
+    ],
+    "wed": [
+     [
+      "09:00",
+      "19:00"
+     ]
+    ],
+    "thu": [
+     [
+      "09:00",
+      "19:00"
+     ]
+    ],
+    "fri": [
+     [
+      "09:00",
+      "19:00"
+     ]
+    ],
+    "sat": [
+     [
+      "09:00",
+      "19:00"
+     ]
+    ]
+   },
+   "snippet": "Church of the Epiphany - 2222 S. Price Road Monday-Saturday, 9 a.m. - 7 p.m.",
+   "lat": 33.4052344,
+   "lng": -111.8920932,
+   "season": {
+    "start": "05-01",
+    "end": "09-30"
+   },
+   "source_url": "https://www.tempe.gov/government/community-health-and-human-services/housing-services/ending-homelessness/heat-relief",
+   "last_checked": "2026-11-14T20:42:12+00:00",
+   "stale": false,
+   "geocoded_with": "OpenStreetMap Nominatim from the listed street address"
+  },
+  {
+   "id": "tempe-library",
+   "name": "Tempe Public Library (cooling center)",
+   "kind": "library",
+   "address": "3500 S. Rural Road, Tempe, AZ",
+   "hours_text": "Mon-Wed 9 a.m.-8 p.m.; Thu-Sat 9 a.m.-5 p.m.; Sun 12-5 p.m.",
+   "weekly": {
+    "mon": [
+     [
+      "09:00",
+      "20:00"
+     ]
+    ],
+    "tue": [
+     [
+      "09:00",
+      "20:00"
+     ]
+    ],
+    "wed": [
+     [
+      "09:00",
+      "20:00"
+     ]
+    ],
+    "thu": [
+     [
+      "09:00",
+      "17:00"
+     ]
+    ],
+    "fri": [
+     [
+      "09:00",
+      "17:00"
+     ]
+    ],
+    "sat": [
+     [
+      "09:00",
+      "17:00"
+     ]
+    ],
+    "sun": [
+     [
+      "12:00",
+      "17:00"
+     ]
+    ]
+   },
+   "snippet": "Tempe Public Library- 3500 S. Rural Road 9 a.m. \u2013 8 p.m. Monday \u2013 Wednesday 9 a.m. \u2013 5 p.m. Thursday \u2013 Saturday 12 p.m. \u2013 5 p.m. Sunday",
+   "lat": 33.3914751,
+   "lng": -111.9280549,
+   "season": {
+    "start": "05-01",
+    "end": "09-30"
+   },
+   "source_url": "https://www.tempe.gov/government/community-health-and-human-services/housing-services/ending-homelessness/heat-relief",
+   "last_checked": "2026-11-14T20:42:12+00:00",
+   "stale": false,
+   "geocoded_with": "OpenStreetMap Nominatim from the listed street address"
+  },
+  {
+   "id": "tempe-escalante",
+   "name": "Escalante Community Center (hydration station)",
+   "kind": "water",
+   "address": "2150 E. Orange St., Tempe, AZ",
+   "hours_text": "Mon-Thu 8 a.m.-9 p.m.; Fri 8-8; Sat 10-5; Sun 1-6 p.m. (holiday hours differ)",
+   "weekly": {
+    "mon": [
+     [
+      "08:00",
+      "21:00"
+     ]
+    ],
+    "tue": [
+     [
+      "08:00",
+      "21:00"
+     ]
+    ],
+    "wed": [
+     [
+      "08:00",
+      "21:00"
+     ]
+    ],
+    "thu": [
+     [
+      "08:00",
+      "21:00"
+     ]
+    ],
+    "fri": [
+     [
+      "08:00",
+      "20:00"
+     ]
+    ],
+    "sat": [
+     [
+      "10:00",
+      "17:00"
+     ]
+    ],
+    "sun": [
+     [
+      "13:00",
+      "18:00"
+     ]
+    ]
+   },
+   "snippet": "Escalante Community Center - 2150 E. Orange St. 8 a.m. \u2013 9 p.m. Monday - Thursday 8 a.m. \u2013 8 p.m. Friday 10 a.m. \u2013 5 p.m. Saturday 1 p.m. \u2013 6 p.m. Sunday",
+   "lat": 33.4191654,
+   "lng": -111.8944789,
+   "season": {
+    "start": "05-01",
+    "end": "09-30"
+   },
+   "source_url": "https://www.tempe.gov/government/community-health-and-human-services/housing-services/ending-homelessness/heat-relief",
+   "last_checked": "2026-11-14T20:42:12+00:00",
+   "stale": false,
+   "geocoded_with": "OpenStreetMap Nominatim from the listed street address"
+  },
+  {
+   "id": "tempe-kiwanis",
+   "name": "Kiwanis Recreation Center (hydration station)",
+   "kind": "water",
+   "address": "6111 S. All America Way, Tempe, AZ",
+   "hours_text": "Mon-Thu 7 a.m.-10 p.m.; Fri 7-7; Sat-Sun 8 a.m.-6 p.m. (holiday hours differ)",
+   "weekly": {
+    "mon": [
+     [
+      "07:00",
+      "22:00"
+     ]
+    ],
+    "tue": [
+     [
+      "07:00",
+      "22:00"
+     ]
+    ],
+    "wed": [
+     [
+      "07:00",
+      "22:00"
+     ]
+    ],
+    "thu": [
+     [
+      "07:00",
+      "22:00"
+     ]
+    ],
+    "fri": [
+     [
+      "07:00",
+      "19:00"
+     ]
+    ],
+    "sat": [
+     [
+      "08:00",
+      "18:00"
+     ]
+    ],
+    "sun": [
+     [
+      "08:00",
+      "18:00"
+     ]
+    ]
+   },
+   "snippet": "Kiwanis Recreation Center - 6111 S. All America Way 7 a.m. \u2013 10 p.m. Monday - Thursday 7 a.m. - 7 p.m. Friday 8 a.m. \u2013 6 p.m. on weekends",
+   "lat": 33.3667697,
+   "lng": -111.9351323,
+   "season": {
+    "start": "05-01",
+    "end": "09-30"
+   },
+   "source_url": "https://www.tempe.gov/government/community-health-and-human-services/housing-services/ending-homelessness/heat-relief",
+   "last_checked": "2026-11-14T20:42:12+00:00",
+   "stale": false,
+   "geocoded_with": "OpenStreetMap Nominatim from the listed street address"
+  },
+  {
+   "id": "tempe-north-multigen",
+   "name": "North Tempe Multi-Generational Center (hydration station)",
+   "kind": "water",
+   "address": "1555 N. Bridalwreath St., Tempe, AZ",
+   "hours_text": "Mon-Fri 8 a.m.-8 p.m.; Sat 10 a.m.-5 p.m. (Sunday not listed)",
+   "weekly": {
+    "mon": [
+     [
+      "08:00",
+      "20:00"
+     ]
+    ],
+    "tue": [
+     [
+      "08:00",
+      "20:00"
+     ]
+    ],
+    "wed": [
+     [
+      "08:00",
+      "20:00"
+     ]
+    ],
+    "thu": [
+     [
+      "08:00",
+      "20:00"
+     ]
+    ],
+    "fri": [
+     [
+      "08:00",
+      "20:00"
+     ]
+    ],
+    "sat": [
+     [
+      "10:00",
+      "17:00"
+     ]
+    ]
+   },
+   "snippet": "North Tempe Multi-Generational Center - 1555 N. Bridalwreath St. 8 a.m. \u2013 8 p.m. Monday - Friday 10 a.m. \u2013 5 p.m. Saturday",
+   "lat": 33.44667,
+   "lng": -111.9221035,
+   "season": {
+    "start": "05-01",
+    "end": "09-30"
+   },
+   "source_url": "https://www.tempe.gov/government/community-health-and-human-services/housing-services/ending-homelessness/heat-relief",
+   "last_checked": "2026-11-14T20:42:12+00:00",
+   "stale": false,
+   "geocoded_with": "OpenStreetMap Nominatim from the listed street address"
+  },
+  {
+   "id": "tempe-westside-multigen",
+   "name": "Westside Multi-Generational Center (hydration station)",
+   "kind": "water",
+   "address": "715 W. Fifth St., Tempe, AZ",
+   "hours_text": "Mon-Fri 8 a.m.-9 p.m.; Sat 10 a.m.-5 p.m. (Sunday not listed)",
+   "weekly": {
+    "mon": [
+     [
+      "08:00",
+      "21:00"
+     ]
+    ],
+    "tue": [
+     [
+      "08:00",
+      "21:00"
+     ]
+    ],
+    "wed": [
+     [
+      "08:00",
+      "21:00"
+     ]
+    ],
+    "thu": [
+     [
+      "08:00",
+      "21:00"
+     ]
+    ],
+    "fri": [
+     [
+      "08:00",
+      "21:00"
+     ]
+    ],
+    "sat": [
+     [
+      "10:00",
+      "17:00"
+     ]
+    ]
+   },
+   "snippet": "Westside Multi-Generational Center - 715 W. Fifth St. 8 a.m. \u2013 9 p.m. Monday \u2013 Friday10 a.m. \u2013 5 p.m. Saturday",
+   "lat": 33.4254122,
+   "lng": -111.9487891,
+   "season": {
+    "start": "05-01",
+    "end": "09-30"
+   },
+   "source_url": "https://www.tempe.gov/government/community-health-and-human-services/housing-services/ending-homelessness/heat-relief",
+   "last_checked": "2026-11-14T20:42:12+00:00",
+   "stale": false,
+   "geocoded_with": "OpenStreetMap Nominatim from the listed street address"
+  }
+ ]
+}

@@ -1,0 +1,168 @@
+{
+ "attribution": "(c) OpenStreetMap contributors, ODbL",
+ "fetched_at": "2026-11-14T20:42:00.869572+00:00",
+ "elements": [
+  {
+   "type": "node",
+   "id": 1583767067,
+   "amenity": "drinking_water",
+   "name": null,
+   "opening_hours": null,
+   "lat": 33.4178156,
+   "lng": -111.9355552
+  },
+  {
+   "type": "node",
+   "id": 1583767068,
+   "amenity": "drinking_water",
+   "name": null,
+   "opening_hours": null,
+   "lat": 33.4178603,
+   "lng": -111.9355767
+  },
+  {
+   "type": "node",
+   "id": 5806125496,
+   "amenity": "drinking_water",
+   "name": null,
+   "opening_hours": null,
+   "lat": 33.4197781,
+   "lng": -111.9126569
+  },
+  {
+   "type": "node",
+   "id": 8762589929,
+   "amenity": "drinking_water",
+   "name": null,
+   "opening_hours": null,
+   "lat": 33.4347555,
+   "lng": -111.9423845
+  },
+  {
+   "type": "node",
+   "id": 9998743172,
+   "amenity": "drinking_water",
+   "name": null,
+   "opening_hours": null,
+   "lat": 33.432128,
+   "lng": -111.9492794
+  },
+  {
+   "type": "node",
+   "id": 9998743182,
+   "amenity": "drinking_water",
+   "name": null,
+   "opening_hours": null,
+   "lat": 33.4316805,
+   "lng": -111.9477887
+  },
+  {
+   "type": "node",
+   "id": 10778845098,
+   "amenity": "drinking_water",
+   "name": null,
+   "opening_hours": null,
+   "lat": 33.4319955,
+   "lng": -111.9452627
+  },
+  {
+   "type": "node",
+   "id": 11877575540,
+   "amenity": "drinking_water",
+   "name": null,
+   "opening_hours": null,
+   "lat": 33.4207257,
+   "lng": -111.9267862
+  },
+  {
+   "type": "node",
+   "id": 11918182441,
+   "amenity": "drinking_water",
+   "name": null,
+   "opening_hours": null,
+   "lat": 33.4338274,
+   "lng": -111.9307364
+  },
+  {
+   "type": "node",
+   "id": 12737103599,
+   "amenity": "drinking_water",
+   "name": null,
+   "opening_hours": null,
+   "lat": 33.4193975,
+   "lng": -111.9369872
+  },
+  {
+   "type": "node",
+   "id": 13895028944,
+   "amenity": "drinking_water",
+   "name": null,
+   "opening_hours": null,
+   "lat": 33.4320598,
+   "lng": -111.9391098
+  },
+  {
+   "type": "node",
+   "id": 13895048953,
+   "amenity": "drinking_water",
+   "name": null,
+   "opening_hours": null,
+   "lat": 33.4321507,
+   "lng": -111.9370266
+  },
+  {
+   "type": "node",
+   "id": 14284442554,
+   "amenity": "drinking_water",
+   "name": null,
+   "opening_hours": null,
+   "lat": 33.4125678,
+   "lng": -111.9168201
+  },
+  {
+   "type": "node",
+   "id": 14284442592,
+   "amenity": "drinking_water",
+   "name": null,
+   "opening_hours": null,
+   "lat": 33.4122175,
+   "lng": -111.9158514
+  },
+  {
+   "type": "way",
+   "id": 28822655,
+   "amenity": "library",
+   "name": "Hayden Library",
+   "opening_hours": "Mo-Th 07:00-24:00; Fr 07:00-20:00; Sa 09:00-20:00; Su 10:00-21:00",
+   "lat": 33.4190232,
+   "lng": -111.9345787
+  },
+  {
+   "type": "way",
+   "id": 28822657,
+   "amenity": "library",
+   "name": "Hayden Library Concourse",
+   "opening_hours": "Mo-Th 07:00-24:00; Fr 07:00-20:00; Sa 09:00-20:00; Su 10:00-21:00",
+   "lat": 33.4190336,
+   "lng": -111.9352321
+  },
+  {
+   "type": "way",
+   "id": 28878390,
+   "amenity": "library",
+   "name": "Ross-Blakley Hall",
+   "opening_hours": null,
+   "lat": 33.4171274,
+   "lng": -111.9296521
+  },
+  {
+   "type": "way",
+   "id": 498340655,
+   "amenity": "library",
+   "name": "Robert P. Curry Library",
+   "opening_hours": null,
+   "lat": 33.4049494,
+   "lng": -111.9336408
+  }
+ ]
+}
