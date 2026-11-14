@@ -1,0 +1,41 @@
+{
+  "resources": [
+    {
+      "id": "sample-1",
+      "name": "SAMPLE water fountain",
+      "kind": "water",
+      "location": { "lat": 33.4172, "lng": -111.9338 },
+      "address": null,
+      "open_now": true,
+      "hours_text": "Sample hours text",
+      "source_url": null,
+      "last_checked": "2026-01-01T12:00:00Z",
+      "distance_m": 120
+    },
+    {
+      "id": "sample-2",
+      "name": "SAMPLE cooling center (closed example)",
+      "kind": "cooling_center",
+      "location": { "lat": 33.4205, "lng": -111.9372 },
+      "address": null,
+      "open_now": false,
+      "hours_text": "Sample hours text",
+      "source_url": null,
+      "last_checked": "2026-01-01T12:00:00Z",
+      "distance_m": 410
+    },
+    {
+      "id": "sample-3",
+      "name": "SAMPLE library (hours unknown example)",
+      "kind": "library",
+      "location": { "lat": 33.4231, "lng": -111.9391 },
+      "address": null,
+      "open_now": null,
+      "hours_text": null,
+      "source_url": null,
+      "last_checked": null,
+      "distance_m": 690
+    }
+  ],
+  "generated_at": "2026-01-01T12:00:00Z"
+}
