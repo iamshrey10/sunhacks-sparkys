@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { api, USE_MOCKS } from './api'
+import HelpNow from './components/HelpNow'
 import RouteForm from './components/RouteForm'
 import { DEFAULT_TIME, buildRequest, type FormValue, type PickTarget } from './form'
 import ComparisonCard from './components/ComparisonCard'
@@ -8,6 +9,7 @@ import SampleBadge from './components/SampleBadge'
 import {
   DEFAULT_PREFS,
   type LatLng,
+  type Resource,
   type RouteRequest,
   type RouteResponse,
 } from './types'
@@ -25,6 +27,8 @@ export default function App() {
     prefs: DEFAULT_PREFS,
   })
   const [picking, setPicking] = useState<PickTarget | null>(null)
+  const [tab, setTab] = useState<'route' | 'help'>('route')
+  const [resources, setResources] = useState<Resource[]>([])
   const [route, setRoute] = useState<RouteResponse | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -45,6 +49,14 @@ export default function App() {
     setForm((f) => ({ ...f, [picking]: point }))
     // After setting the start, move on to the end.
     setPicking(picking === 'start' && !form.end ? 'end' : null)
+  }
+
+  const walkTo = (origin: LatLng, r: Resource) => {
+    const next = { ...form, start: origin, end: r.location }
+    setForm(next)
+    setTab('route')
+    const req = buildRequest(next)
+    if (req) findRoute(req)
   }
 
   const findRoute = (req: RouteRequest) => {
@@ -73,19 +85,43 @@ export default function App() {
           <span className="text-sm text-sky-100">API: {apiState}</span>
         </div>
       </header>
+      <nav className="flex gap-2 bg-sky-950 px-4 pb-3" aria-label="Screens">
+        {(['route', 'help'] as const).map((t) => (
+          <button
+            key={t}
+            type="button"
+            aria-pressed={tab === t}
+            onClick={() => setTab(t)}
+            className={`min-h-11 flex-1 rounded-lg text-sm font-bold ${
+              tab === t ? 'bg-white text-sky-950' : 'bg-sky-800 text-white'
+            }`}
+          >
+            {t === 'route' ? 'Route' : 'Help now'}
+          </button>
+        ))}
+      </nav>
       <main className="min-h-[35%] flex-1">
         <RouteMap
           start={form.start}
           end={form.end}
           picking={picking}
           onMapClick={handleMapClick}
-          route={route}
+          route={tab === 'route' ? route : null}
+          resources={tab === 'help' ? resources : []}
         />
       </main>
       <section
         ref={panelRef}
         className="max-h-[55%] overflow-y-auto bg-white px-4 py-3 text-slate-900 shadow-[0_-4px_12px_rgba(0,0,0,0.2)]"
       >
+        {tab === 'help' ? (
+          <HelpNow
+            resources={resources}
+            onResources={(_origin, list) => setResources(list)}
+            onWalk={walkTo}
+          />
+        ) : (
+          <>
         {route && (
           <ComparisonCard
             route={route}
@@ -109,6 +145,8 @@ export default function App() {
           <p role="alert" className="mt-3 font-medium text-red-800">
             {error}
           </p>
+        )}
+          </>
         )}
       </section>
     </div>

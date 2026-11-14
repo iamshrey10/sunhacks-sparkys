@@ -3,12 +3,13 @@ import {
   CircleMarker,
   MapContainer,
   Polyline,
+  Tooltip,
   TileLayer,
   useMap,
   useMapEvents,
 } from 'react-leaflet'
 import { COOLEST_COLOR, FASTEST_COLOR } from '../colors'
-import type { LatLng, RouteResponse } from '../types'
+import type { LatLng, Resource, RouteResponse } from '../types'
 
 // ASU Tempe campus.
 const TEMPE_CENTER: [number, number] = [33.4194, -111.9341]
@@ -20,6 +21,7 @@ interface Props {
   picking: 'start' | 'end' | null
   onMapClick: (point: LatLng) => void
   route?: RouteResponse | null
+  resources?: Resource[]
 }
 
 /** Zoom to show both routes whenever a new result arrives. */
@@ -52,6 +54,7 @@ export default function RouteMap({
   picking,
   onMapClick,
   route,
+  resources = [],
 }: Props) {
   return (
     <div
@@ -82,6 +85,18 @@ export default function RouteMap({
             />
           </>
         )}
+        {resources.map((r) => (
+          <CircleMarker
+            key={r.id}
+            center={[r.location.lat, r.location.lng]}
+            radius={10}
+            pathOptions={marker(
+              r.open_now === true ? '#047857' : r.open_now === false ? '#475569' : '#d97706',
+            )}
+          >
+            <Tooltip>{r.name}</Tooltip>
+          </CircleMarker>
+        ))}
         {start && (
           <CircleMarker
             center={[start.lat, start.lng]}
