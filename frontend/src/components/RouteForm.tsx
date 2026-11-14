@@ -56,7 +56,7 @@ export default function RouteForm({
   }
 
   const pointRow = (target: PickTarget, label: string) => (
-    <div className="rounded-lg border border-slate-300 p-2">
+    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3 shadow-sm">
       <div className="flex items-baseline justify-between">
         <span className="font-semibold">{label}</span>
         <span className="text-sm text-slate-700">{fmt(value[target])}</span>
@@ -153,7 +153,7 @@ export default function RouteForm({
       <button
         type="submit"
         disabled={!request || loading}
-        className="min-h-12 w-full rounded-lg bg-sky-900 text-base font-bold text-white disabled:bg-slate-500"
+        className="min-h-12 w-full rounded-xl bg-gradient-to-r from-sky-900 to-teal-700 shadow-md text-base font-bold text-white disabled:bg-slate-500"
       >
         {loading ? 'Finding route…' : 'Find cool route'}
       </button>

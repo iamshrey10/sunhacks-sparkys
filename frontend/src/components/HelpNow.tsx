@@ -76,7 +76,7 @@ export default function HelpNow({ onResources, resources, onWalk }: Props) {
         type="button"
         onClick={find}
         disabled={busy}
-        className="min-h-16 w-full rounded-xl bg-sky-900 text-lg font-bold text-white disabled:bg-slate-500"
+        className="min-h-16 w-full rounded-2xl bg-gradient-to-r from-sky-900 to-teal-700 shadow-md text-lg font-bold text-white disabled:bg-slate-500"
       >
         {status === 'locating'
           ? 'Finding your location…'
@@ -104,7 +104,7 @@ export default function HelpNow({ onResources, resources, onWalk }: Props) {
         {resources.map((r) => {
           const badge = openBadge(r.open_now)
           return (
-            <li key={r.id} className="rounded-lg border border-slate-300 p-3">
+            <li key={r.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-3 shadow-sm">
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <p className="font-bold">{r.name}</p>

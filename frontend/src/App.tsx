@@ -110,28 +110,45 @@ export default function App() {
 
   return (
     <div className="flex h-full flex-col">
-      <header className="flex items-center justify-between gap-2 bg-sky-950 px-4 py-3 text-white">
-        <h1 className="text-lg font-bold">Cool Route</h1>
-        <div className="flex items-center gap-3">
-          <SampleBadge />
-          <span className="text-sm text-sky-100">API: {apiState}</span>
+      <header className="bg-gradient-to-br from-sky-950 via-sky-900 to-teal-800 px-4 pb-4 pt-3 text-white">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true">
+              <circle cx="16" cy="16" r="15" fill="#e0f2fe" />
+              <circle cx="21" cy="11" r="5" fill="#f59e0b" />
+              <path d="M4 26c4-9 10-13 24-12v12z" fill="#0c4a6e" opacity="0.85" />
+            </svg>
+            <div>
+              <h1 className="text-lg font-extrabold leading-tight">Cool Route</h1>
+              <p className="text-xs text-sky-100">The shadiest way to walk Tempe</p>
+            </div>
+          </div>
+          <div className="flex flex-col items-end gap-1">
+            <SampleBadge />
+            <span className="text-xs text-sky-100">API: {apiState}</span>
+          </div>
         </div>
+        <nav
+          className="mt-3 flex gap-1 rounded-xl bg-sky-950/60 p-1"
+          aria-label="Screens"
+        >
+          {(['route', 'help'] as const).map((t) => (
+            <button
+              key={t}
+              type="button"
+              aria-pressed={tab === t}
+              onClick={() => setTab(t)}
+              className={`min-h-11 flex-1 rounded-lg text-sm font-bold transition-colors ${
+                tab === t
+                  ? 'bg-white text-sky-950 shadow'
+                  : 'text-sky-100 hover:bg-sky-800'
+              }`}
+            >
+              {t === 'route' ? 'Plan a route' : 'Help now'}
+            </button>
+          ))}
+        </nav>
       </header>
-      <nav className="flex gap-2 bg-sky-950 px-4 pb-3" aria-label="Screens">
-        {(['route', 'help'] as const).map((t) => (
-          <button
-            key={t}
-            type="button"
-            aria-pressed={tab === t}
-            onClick={() => setTab(t)}
-            className={`min-h-11 flex-1 rounded-lg text-sm font-bold ${
-              tab === t ? 'bg-white text-sky-950' : 'bg-sky-800 text-white'
-            }`}
-          >
-            {t === 'route' ? 'Route' : 'Help now'}
-          </button>
-        ))}
-      </nav>
       <main className="min-h-[35%] flex-1">
         <RouteMap
           start={form.start}
@@ -144,8 +161,9 @@ export default function App() {
       </main>
       <section
         ref={panelRef}
-        className="max-h-[55%] overflow-y-auto bg-white px-4 py-3 text-slate-900 shadow-[0_-4px_12px_rgba(0,0,0,0.2)]"
+        className="relative z-[1100] max-h-[55%] overflow-y-auto rounded-t-3xl bg-white px-4 pb-6 pt-2 text-slate-900 shadow-[0_-6px_20px_rgba(12,74,110,0.3)]"
       >
+        <div className="mx-auto mb-3 h-1.5 w-10 rounded-full bg-slate-300" />
         {tab === 'help' ? (
           <HelpNow
             resources={resources}

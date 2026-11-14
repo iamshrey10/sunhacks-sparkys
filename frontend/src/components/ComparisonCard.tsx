@@ -24,23 +24,28 @@ function Column({
   color: string
 }) {
   return (
-    <div className="flex-1 rounded-lg border border-slate-300 p-2">
-      <div className="flex items-center gap-2 font-bold">
-        <span
-          aria-hidden="true"
-          className="inline-block h-1.5 w-5 rounded"
-          style={{ background: color }}
-        />
-        {label}
+    <div
+      className="flex-1 rounded-2xl border border-slate-200 bg-slate-50 p-3 shadow-sm"
+      style={{ borderTop: `5px solid ${color}` }}
+    >
+      <div className="font-bold">{label}</div>
+      <div className="mt-1 text-3xl font-extrabold text-sky-950">
+        {option.shade_pct}
+        <span className="text-base font-bold">% shade</span>
       </div>
-      <dl className="mt-1 text-sm">
+      <div
+        className="mt-1 h-2 overflow-hidden rounded-full bg-amber-200"
+        aria-hidden="true"
+      >
+        <div
+          className="h-full rounded-full"
+          style={{ width: `${option.shade_pct}%`, background: color }}
+        />
+      </div>
+      <dl className="mt-2 text-sm">
         <div className="flex justify-between">
           <dt>Walk</dt>
           <dd className="font-semibold">{minutes(option.duration_s)} min</dd>
-        </div>
-        <div className="flex justify-between">
-          <dt>Shade</dt>
-          <dd className="font-semibold">{option.shade_pct}%</dd>
         </div>
         <div className="flex justify-between">
           <dt>In sun</dt>
@@ -67,7 +72,7 @@ export default function ComparisonCard({
 
   return (
     <section aria-label="Route comparison" className="mb-3 space-y-2">
-      <p className="text-base font-bold text-sky-950">
+      <p className="rounded-xl bg-sky-100 px-3 py-2 text-base font-bold text-sky-950">
         Coolest route: {extraText}, {sunSaved} min less in the sun
       </p>
       <div className="flex gap-2">
