@@ -94,6 +94,7 @@ flowchart LR
 | Backend | Python 3.12, FastAPI, Pydantic |
 | Map and shade | OpenStreetMap, OSMnx, NetworkX, Shapely, pvlib |
 | AI and live data | Gemini API, TinyFish (Fetch) |
+| Cloud | AWS Lambda with a Function URL (the same FastAPI app via Mangum) |
 | Planning and tooling | Kiro (architecture spec), GitHub pull requests |
 
 ## Run it
@@ -121,8 +122,17 @@ python scripts/fetch_osm_resources.py
 python scripts/refresh_resources.py          # needs TINYFISH_API_KEY
 ```
 
+Deploy the API to AWS Lambda (Python 3.12, x86_64): build the package, upload it, set
+the handler to `backend.lambda_handler.handler`, and add `GEMINI_API_KEY`,
+`GEMINI_MODEL` and `TINYFISH_API_KEY` as environment variables in the Lambda console.
+Enable a Function URL with auth type NONE (CORS is handled by the app).
+
+```bash
+PATH="$PWD/.venv/bin:$PATH" bash scripts/build_lambda.sh   # writes dist/coolroute-lambda.zip (about 12 MB)
+```
+
 Android APK: the app runs from `https://localhost` inside the APK, so the API must be
-reachable over HTTPS.
+reachable over HTTPS (the Lambda Function URL works).
 
 ```bash
 cd mobile && VITE_API_URL=https://your-api-address.example npm run apk
@@ -149,7 +159,8 @@ Architecture spec drafted with Kiro. Details: [docs/ARCHITECTURE.md](docs/ARCHIT
 - More accurate shade: building heights, tree canopy data, more hand-labelled covered
   walkways, and shade layers by season.
 - Wider coverage than the ASU Tempe corridor.
-- Hosted backend on AWS (S3 for data, Lambda and API Gateway for the API). Today the
-  demo API runs on a laptop behind an HTTPS tunnel.
+- A hosted web version of the app (S3 and CloudFront), so it can be opened without
+  installing the APK, and a persistent store for usage-based rate limits (today they
+  are in memory per Lambda container).
 - Live temperature and UV from a weather service, and verified hours for more sites.
 - Spanish and other languages.
