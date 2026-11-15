@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { api, ApiError } from '../api'
 import type { ParseResponse } from '../types'
+import AiOrb from './AiOrb'
 
 interface Props {
   onParsed: (parsed: ParseResponse) => void
@@ -53,7 +54,8 @@ export default function AskBox({ onParsed, onDestination }: Props) {
       <label htmlFor="ask-text" className="font-semibold">
         Or just say it
       </label>
-      <div className="mt-1 flex gap-2">
+      <div className="mt-1 flex items-center gap-2">
+        <AiOrb busy={busy} />
         <input
           id="ask-text"
           type="text"

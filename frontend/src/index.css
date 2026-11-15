@@ -377,3 +377,30 @@ body {
     opacity: 0;
   }
 }
+
+/* The AI orb pulses only while something is loading (transform and opacity only). */
+.orb-pulse {
+  animation: orb-pulse 1.4s ease-in-out infinite;
+}
+@keyframes orb-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.18);
+    opacity: 0.7;
+  }
+}
+
+/* Words of an explanation fade in one by one; all of them are in the DOM from the start. */
+.word-in {
+  animation: word-in var(--motion-slow) var(--ease-out-soft) backwards;
+}
+@keyframes word-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}

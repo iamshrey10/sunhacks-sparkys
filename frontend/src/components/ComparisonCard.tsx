@@ -1,4 +1,5 @@
 import { useCountUp } from '../hooks/useCountUp'
+import WordReveal from './WordReveal'
 import { extraWalkText, formatMin, minutes, verdict } from '../routeSummary'
 import type { RouteOption, RouteResponse } from '../types'
 
@@ -192,7 +193,7 @@ export default function ComparisonCard({
           </span>
         </p>
       </div>
-      {explanation && <p className="text-sm">{explanation}</p>}
+      {explanation && <WordReveal key={explanation} text={explanation} />}
       {coolest.stairs_count > 0 && (
         <p className="text-sm">
           Coolest route has {coolest.stairs_count}{' '}
