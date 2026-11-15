@@ -180,6 +180,8 @@ cd mobile && VITE_API_URL=https://your-api-address.example npm run apk
 
 ## Demo
 
+**Install the app:** [CoolRoute.apk (v1.0.0)](https://github.com/iamshrey10/sunhacks-sparkys/releases/tag/v1.0.0). On Android, open the file and allow installs from this source. It needs internet.
+
 Screen recording and photos: [Google Drive](https://drive.google.com/file/d/1jvZ-wFS8XuNwV_o_2fhHs7JaszeOq6_r/view?usp=sharing). The click-by-click walkthrough is in [docs/DEMO_SCRIPT.md](docs/DEMO_SCRIPT.md).
 
 ## Team
