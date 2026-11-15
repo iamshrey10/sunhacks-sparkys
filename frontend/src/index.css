@@ -366,3 +366,14 @@ body {
     display: none;
   }
 }
+
+/* A small chip that pops in after the numbers have counted up (transform and opacity only). */
+.chip-pop {
+  animation: chip-pop var(--motion-base) var(--ease-spring) 550ms backwards;
+}
+@keyframes chip-pop {
+  from {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+}
