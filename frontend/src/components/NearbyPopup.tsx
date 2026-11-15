@@ -8,6 +8,8 @@ interface Props {
   nearby: NearbyPlace[]
   /** Distance from the bottom of the screen, so it floats above the sheet. */
   bottom: number
+  /** True when the sheet covers too much of the map: nothing is shown or used up. */
+  hidden?: boolean
   onShow: (point: LatLng) => void
 }
 
@@ -18,17 +20,17 @@ const SHOW_FOR_MS = 10000
  * the first time it comes within range. Each place is shown once per walk, ahead
  * of you before behind you. Mount it only while walking, so it resets between walks.
  */
-export default function NearbyPopup({ nearby, bottom, onShow }: Props) {
+export default function NearbyPopup({ nearby, bottom, hidden = false, onShow }: Props) {
   const [current, setCurrent] = useState<NearbyPlace | null>(null)
   const seen = useRef(new Set<string>())
 
   useEffect(() => {
-    if (current) return
+    if (current || hidden) return
     const next = nearby.find((p) => !seen.current.has(p.id) && p.ahead !== false)
     if (!next) return
     seen.current.add(next.id)
     setCurrent(next)
-  }, [nearby, current])
+  }, [nearby, current, hidden])
 
   useEffect(() => {
     if (!current) return
@@ -36,7 +38,7 @@ export default function NearbyPopup({ nearby, bottom, onShow }: Props) {
     return () => clearTimeout(timer)
   }, [current])
 
-  if (!current) return null
+  if (!current || hidden) return null
   return (
     <div
       role="status"
