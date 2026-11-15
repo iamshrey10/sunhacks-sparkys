@@ -382,7 +382,7 @@ export default function App() {
   )
 
   return (
-    <div className="relative h-dvh overflow-hidden bg-mist">
+    <div className="relative h-dvh overflow-clip bg-mist">
       <div className="absolute inset-0">
         <RouteMap
           start={form.start}
@@ -525,6 +525,12 @@ export default function App() {
               loading={loading}
               labels={labels}
               notice={endOutside ? OUTSIDE_MESSAGE : undefined}
+              // Only re-request when a route is already showing, as the shade slider does.
+              onTimeCommit={(time) => {
+                if (route && request && !endOutside) {
+                  findRoute({ ...request, depart_time: time })
+                }
+              }}
             />
           </div>
           )
