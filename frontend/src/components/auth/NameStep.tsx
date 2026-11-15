@@ -72,6 +72,9 @@ export default function NameStep({ first, last, onChange, onNext }: Props) {
         e.preventDefault()
         setTouched({ first: true, last: true })
         if (firstOk && lastOk) onNext()
+        // Say what is missing and put the cursor there.
+        else if (!firstOk) firstInput.current?.focus()
+        else lastInput.current?.focus()
       }}
     >
       <h1 className={title}>What should we call you?</h1>
@@ -82,7 +85,7 @@ export default function NameStep({ first, last, onChange, onNext }: Props) {
         {field('last', 'Last name', last, lastOk, 'family-name', lastInput, 'Please enter your last name.', 'done')}
       </div>
 
-      <button type="submit" disabled={!firstOk || !lastOk} className={`${primaryBtn} mt-6`}>
+      <button type="submit" className={`${primaryBtn} mt-6`}>
         Continue
       </button>
     </form>

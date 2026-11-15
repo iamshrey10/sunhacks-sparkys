@@ -30,7 +30,8 @@ Tempe campus and Mill Ave.
 - **Help now:** finds the nearest water points, libraries and City of Tempe
   heat-relief sites, each marked open, closed or **hours unknown**. We never guess
   hours.
-- **Saved preferences** stay on the phone. No account, no database.
+- **Sign-in and onboarding** in demo mode: Google and phone (6-digit code) screens, your name and what brings you here, and a guest option. It is simulated and says so on screen; details stay on the phone.
+- **Saved preferences** stay on the phone. No account server, no database.
 
 For example, from the Memorial Union to Tempe Beach Park at 3:00 PM (real model
 output):

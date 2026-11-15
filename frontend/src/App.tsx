@@ -424,7 +424,7 @@ export default function App() {
       </div>
 
       <header
-        className="absolute inset-x-2 z-[1200] flex h-11 items-center justify-between gap-2 rounded-lg bg-gradient-to-r from-header-from to-header-to px-3 text-ink shadow-pop"
+        className="absolute inset-x-2 z-[1310] flex h-11 items-center justify-between gap-2 rounded-lg bg-gradient-to-r from-header-from to-header-to px-3 text-ink shadow-pop"
         style={{ top: 'max(0.5rem, env(safe-area-inset-top))' }}
       >
         <div className="flex items-center gap-2">

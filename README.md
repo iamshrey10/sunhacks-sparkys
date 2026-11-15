@@ -27,7 +27,7 @@ have shade, and they treat a sunny mile at 3 PM the same as the same mile at nig
   then writes a short explanation of the route using only numbers from the result.
 - **Help now:** the nearest water points, libraries and City of Tempe heat-relief
   sites, each marked open, closed or **hours unknown**. We never guess hours.
-- **Saved preferences** on the phone. No account, no database.
+- **Sign-in and onboarding** (demo mode, see below): a branded intro video, then Google or phone sign-in, your name, and what brings you here. Guests can skip it. Your details and preferences are saved on the phone only; there is no account server and no database.
 
 ## Example result (real model output)
 
@@ -59,6 +59,17 @@ is not meaningfully cooler, the app says so.
 - Cool Route lowers sun exposure on a walk. It does not address indoor heat deaths
   or homelessness. It is aimed at pedestrians, older adults, students and outdoor
   workers. The app gives general information, not medical advice.
+
+## Sign-in is a demo
+
+The sign-in screens (Google, and phone with a 6-digit code) are a complete, working
+flow, but they run in **demo mode**: no Google account is checked and no text message
+is sent, and the screens say so. The demo code is `123456`. Nothing is verified, and
+nothing leaves the phone. Guests can skip sign-in. To make it real, replace the three
+functions in `frontend/src/auth/demoAuth.ts` with a real provider (for example
+Firebase Authentication with phone sign-in and native Google sign-in) and set
+`AUTH_LIVE` to `true`; the screens do not change. Real Google sign-in does not work
+inside a plain Android web view, so it needs a native plugin and your own credentials.
 
 ## How it works
 
