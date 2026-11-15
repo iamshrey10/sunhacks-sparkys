@@ -1,5 +1,5 @@
 import { tap } from './haptics'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { api, USE_MOCKS } from './api'
 import AskBox from './components/AskBox'
 import FloatingSearch from './components/FloatingSearch'
@@ -23,8 +23,9 @@ import { useWalk } from './hooks/useWalk'
 import { RouteSkeleton } from './components/Skeleton'
 import Toast from './components/Toast'
 import IntroSplash from './components/IntroSplash'
-import WelcomeScreen from './components/WelcomeScreen'
-import { hasSeenWelcome, markWelcomeSeen } from './welcome'
+import AccountMenu from './components/auth/AccountMenu'
+import AuthFlow from './components/auth/AuthFlow'
+import { clearProfile, getProfile, subscribeProfile, type Profile } from './auth/profile'
 import RouteMap from './components/RouteMap'
 import SampleBadge from './components/SampleBadge'
 import { summaryText } from './routeSummary'
@@ -56,11 +57,11 @@ const MIN_MAP_FOR_POPUP = 260
 /** Space the floating header and search bar take at the top of the map. */
 const TOP_PAD = 124
 
-type Stage = 'intro' | 'welcome' | 'app'
+type Stage = 'intro' | 'auth' | 'app'
 
 export default function App() {
-  // The brand video plays first, then a welcome screen (once per device). The app
-  // loads underneath meanwhile. "?nointro" skips both, for testing.
+  // The brand video plays first, then sign-in (once per device). The app loads
+  // underneath meanwhile. "?nointro" skips both, for testing.
   const [stage, setStage] = useState<Stage>(() =>
     new URLSearchParams(window.location.search).has('nointro') ? 'app' : 'intro',
   )
@@ -68,6 +69,12 @@ export default function App() {
     USE_MOCKS ? 'offline' : 'checking',
   )
   const [prefs, setPrefs] = usePrefs()
+  const profile = useSyncExternalStore(subscribeProfile, getProfile)
+  const completeAuth = (p: Profile) => {
+    // Someone here to stay safe in the heat starts on High heat sensitivity.
+    if (p.purpose === 'heat-safety') setPrefs({ ...prefs, heat_sensitivity: 'high' })
+    setStage('app')
+  }
   const [trip, setTrip] = useState<Omit<FormValue, 'prefs'>>({
     start: null,
     end: null,
@@ -450,6 +457,14 @@ export default function App() {
                 ? 'Offline'
                 : 'Connecting'}
           </span>
+          <AccountMenu
+            profile={profile}
+            onSignIn={() => setStage('auth')}
+            onSignOut={() => {
+              clearProfile()
+              setStage('auth')
+            }}
+          />
         </div>
       </header>
 
@@ -583,22 +598,12 @@ export default function App() {
         />
       )}
 
-      {stage === 'welcome' && (
-        <WelcomeScreen
-          onStart={() => {
-            markWelcomeSeen()
-            setStage('app')
-          }}
-        />
-      )}
+      {stage === 'auth' && <AuthFlow onComplete={completeAuth} />}
       {stage === 'intro' && (
         <IntroSplash
-          firstTime={!hasSeenWelcome()}
-          onStart={() => {
-            markWelcomeSeen()
-            setStage('app')
-          }}
-          onDone={() => setStage(hasSeenWelcome() ? 'app' : 'welcome')}
+          firstTime={!profile}
+          onStart={() => setStage('auth')}
+          onDone={() => setStage(getProfile() ? 'app' : 'auth')}
         />
       )}
     </div>
