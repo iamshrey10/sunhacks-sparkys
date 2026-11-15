@@ -40,7 +40,8 @@ function Hero({ route }: { route: RouteResponse }) {
   const v = verdict(route)
   return (
     <div
-      className="relative hairline rounded-xl border bg-gradient-to-br from-mint to-sun p-4 shadow-card"
+      className="rise relative hairline rounded-xl border bg-gradient-to-br from-mint to-sun p-4 shadow-card"
+      style={{ '--i': 0 } as React.CSSProperties}
       aria-live="polite"
     >
       {v.meaningful ? (
@@ -116,18 +117,24 @@ function RouteBar({
   label,
   dot,
   sunSavedS,
+  index,
 }: {
   option: RouteOption
   label: string
   dot: string
   /** For the coolest route: sun saved against the fastest, shown as a chip. */
   sunSavedS?: number
+  /** Order of appearance, for the staggered rise. */
+  index: number
 }) {
   const shade = Math.round(option.shade_pct)
   const shadeShown = useCountUp(option.shade_pct)
   const showChip = sunSavedS !== undefined && sunSavedS > 0 && formatMin(sunSavedS) !== '0'
   return (
-    <div className="relative hairline rounded-lg border bg-gradient-to-br from-white to-powder p-3 shadow-card">
+    <div
+      className="rise relative hairline rounded-lg border bg-gradient-to-br from-white to-powder p-3 shadow-card"
+      style={{ '--i': index } as React.CSSProperties}
+    >
       <div className="flex items-center gap-3">
         <div
           role="img"
@@ -182,8 +189,14 @@ export default function ComparisonCard({
     <section aria-label="Route comparison" className="mb-3 space-y-3">
       <Hero route={route} />
       <div className="space-y-2">
-        <RouteBar option={fastest} label="Fastest" dot="bg-neutral" />
-        <RouteBar option={coolest} label="Coolest" dot="bg-cool" sunSavedS={verdict(route).sunSavedS} />
+        <RouteBar option={fastest} label="Fastest" dot="bg-neutral" index={1} />
+        <RouteBar
+          option={coolest}
+          label="Coolest"
+          dot="bg-cool"
+          sunSavedS={verdict(route).sunSavedS}
+          index={2}
+        />
         <p className="flex gap-4 px-1 text-xs text-muted" aria-hidden="true">
           <span className="flex items-center gap-1.5">
             <span className="h-2.5 w-2.5 rounded-sm bg-cool" /> Shade

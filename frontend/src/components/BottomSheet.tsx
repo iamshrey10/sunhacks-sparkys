@@ -1,3 +1,4 @@
+import { tap } from '../haptics'
 import {
   useEffect,
   useLayoutEffect,
@@ -136,6 +137,12 @@ export default function BottomSheet({
   const step = (from: Snap, dir: 1 | -1): Snap =>
     ORDER[clamp(ORDER.indexOf(from) + dir, 0, ORDER.length - 1)]
 
+  /** Change the snap, with a light tap when it really changes. */
+  const commit = (next: Snap) => {
+    if (next !== snap) tap()
+    onSnapChange(next)
+  }
+
   const nearest = (h: number): Snap =>
     ORDER.reduce((best, s) =>
       Math.abs(heights[s] - h) < Math.abs(heights[best] - h) ? s : best,
@@ -224,7 +231,7 @@ export default function BottomSheet({
       next = step(snap, speed < 0 ? 1 : -1)
     }
     setDragHeight(null)
-    onSnapChange(next)
+    commit(next)
   }
 
   useEffect(() => {
@@ -242,10 +249,10 @@ export default function BottomSheet({
   const onHandleKey = (e: KeyboardEvent<HTMLButtonElement>) => {
     if (e.key === 'ArrowUp') {
       e.preventDefault()
-      onSnapChange(step(snap, 1))
+      commit(step(snap, 1))
     } else if (e.key === 'ArrowDown') {
       e.preventDefault()
-      onSnapChange(step(snap, -1))
+      commit(step(snap, -1))
     }
   }
 
@@ -256,7 +263,7 @@ export default function BottomSheet({
       aria-label="Route planner"
       className={`hairline absolute inset-x-0 bottom-0 z-[1100] flex flex-col rounded-t-xl bg-white shadow-sheet ${
         dragHeight === null
-          ? 'transition-[height] duration-[250ms] ease-out motion-reduce:transition-none'
+          ? 'transition-[height] duration-300 ease-settle motion-reduce:transition-none'
           : ''
       }`}
       style={{ height, visibility: measured ? 'visible' : 'hidden' }}
@@ -287,7 +294,7 @@ export default function BottomSheet({
             type="button"
             aria-label="Resize panel"
             onKeyDown={onHandleKey}
-            onClick={() => onSnapChange(snap === 'full' ? 'half' : step(snap, 1))}
+            onClick={() => commit(snap === 'full' ? 'half' : step(snap, 1))}
             // The invisible ::before extends the tap area to 44 px without taking layout space.
             className="relative mx-auto flex h-8 w-16 items-center justify-center rounded-md before:absolute before:-top-3 before:-inset-x-4 before:bottom-0 before:content-['']"
           >

@@ -1,3 +1,4 @@
+import { tap } from './haptics'
 import { useEffect, useRef, useState } from 'react'
 import { api, USE_MOCKS } from './api'
 import AskBox from './components/AskBox'
@@ -154,6 +155,7 @@ export default function App() {
 
   const handleMapClick = (point: LatLng) => {
     if (!picking) return
+    tap()
     setForm((f) => ({ ...f, [picking]: point }))
     // Keep the map in view while choosing points.
     setSnap('peek')
@@ -304,6 +306,7 @@ export default function App() {
 
   const pickPlace = (p: PlaceResult | Recent) => {
     const end = { lat: p.lat, lng: p.lng }
+    tap()
     fromSearch.current = true
     setForm((f) => ({ ...f, end }))
     fromSearch.current = false
@@ -424,7 +427,7 @@ export default function App() {
             <span
               className={`h-2 w-2 rounded-full ${
                 apiState === 'online'
-                  ? 'bg-open motion-safe:animate-pulse'
+                  ? 'bg-open'
                   : apiState === 'offline'
                     ? 'bg-closed'
                     : 'bg-neutral'
