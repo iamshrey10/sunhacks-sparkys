@@ -174,8 +174,9 @@ Rules:
 - No medical or legal advice and no health claims. Do not mention symptoms,
   illnesses or what the walker should do for their health.
 - Never mention the walker's age or why they are sensitive to heat.
-- Never write the number 0: say "no stairs" or "no extra time" instead.
-- Mention stairs only if the facts list them.
+- Never write the number 0; use words instead, such as "no extra time".
+- Mention stairs only if the facts list them. If they do not, say nothing at all
+  about stairs or steps.
 - Say "minutes in direct sun", not "sun minutes".
 - No greetings, lists or markdown.
 """

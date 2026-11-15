@@ -481,6 +481,23 @@ def test_wording_that_contradicts_the_facts_is_replaced(gemini, change, reply):
     )
 
 
+def test_prompt_does_not_suggest_stair_wording_the_route_cannot_back_up():
+    # "no stairs" in the instructions led Gemini to write it for routes with stairs,
+    # which the guard then rejected. Stairs come up only when the walker avoids them.
+    assert "no stairs" not in service.EXPLAIN_INSTRUCTIONS
+    prompt = service._explain_prompt(service._route_facts(explain_req(MU_TO_HAYDEN)))
+    assert "stair" not in prompt
+
+
+def test_stairs_route_reply_that_leaves_stairs_out_is_kept(gemini):
+    # A real Gemini reply for MU to Hayden Library, which has 1 stair segment.
+    gemini.reply = (
+        "Leave at 09:00 to take the 5 minute route, which has 52 percent shade and "
+        "2 minutes in direct sun. This route is already the coolest one."
+    )
+    assert service.explain_route(explain_req(MU_TO_HAYDEN)).text == gemini.reply
+
+
 @pytest.mark.parametrize(
     "change, reply",
     [
