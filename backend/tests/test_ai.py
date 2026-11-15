@@ -246,6 +246,7 @@ def test_template_text_passes_every_guard(change, prefs):
     text = service._template_explanation(facts)
     assert service._is_safe(text, service._allowed_numbers(req, facts))
     assert service._reads_well(text)
+    assert not service._contradicts(text, facts)
 
 
 def test_template_is_honest_when_not_much_cooler():
@@ -392,6 +393,113 @@ def test_bare_zero_is_replaced(gemini, reply):
 def test_zero_percent_and_clock_times_are_fine(gemini):
     gemini.reply = "Leaving at 15:00, the fastest route has 0% shade and the cooler one 64%."
     assert service.explain_route(explain_req(no_shade_on_fastest)).text == gemini.reply
+
+
+# Findings from the explanation audit on real /route results around ASU Tempe.
+
+
+def audit_route(fastest, coolest):
+    """fastest/coolest as (duration_s, shade_pct, sun_exposed_s, distance_m)."""
+    def option(kind, values, offset):
+        duration, shade, sun, distance = values
+        return {"kind": kind, "geometry": [[33.42, -111.93], [33.43, -111.94 + offset]],
+                "distance_m": distance, "duration_s": duration, "shade_pct": shade,
+                "sun_exposed_s": sun, "stairs_count": 0}
+
+    def change(route):
+        route["fastest"] = option("fastest", fastest, 0)
+        route["coolest"] = option("coolest", coolest, 0.001)
+
+    return change
+
+
+# Sun Devil Stadium to Gammage at 11:00: 27 vs 30 minutes, so 3 extra (not 2).
+STADIUM_TO_GAMMAGE = audit_route((1644, 9.4, 1489, 2219), (1772, 32.0, 1205, 2392))
+# Tempe Beach Park to Hayden Library at 07:30: 8 vs 7 sun minutes, so 1 saved (not 2).
+BEACH_TO_HAYDEN = audit_route((1302, 61.8, 497, 1757), (1344, 70.1, 402, 1815))
+# Hayden Library to Old Main at 10:00: 4 vs 5 minutes, 4 vs 3 sun minutes.
+HAYDEN_TO_OLD_MAIN = audit_route((254, 5.7, 239, 342), (288, 34.7, 188, 389))
+
+
+def MU_TO_HAYDEN(route):
+    """MU to Hayden Library at 09:00: one route, with 1 stair segment."""
+    option = {"geometry": [[33.4166, -111.934], [33.4196, -111.9351]], "distance_m": 412,
+              "duration_s": 305, "shade_pct": 52.1, "sun_exposed_s": 146, "stairs_count": 1}
+    route["fastest"] = {**option, "kind": "fastest"}
+    route["coolest"] = {**option, "kind": "coolest"}
+    route["depart_time"] = route["shade_layer"] = "09:00"
+
+
+def test_differences_match_the_rounded_minutes_shown():
+    stadium = service._route_facts(explain_req(STADIUM_TO_GAMMAGE))
+    assert (stadium["fastest_minutes"], stadium["cooler_minutes"]) == (27, 30)
+    assert stadium["extra_minutes"] == 3
+    beach = service._route_facts(explain_req(BEACH_TO_HAYDEN))
+    assert (beach["fastest_sun_minutes"], beach["cooler_sun_minutes"]) == (8, 7)
+    assert beach["sun_minutes_saved"] == 1
+
+
+def test_prompt_gives_guidance_not_a_label_to_copy():
+    prompt = service._explain_prompt(service._route_facts(explain_req()))
+    assert service.VERDICT_GUIDANCE["clearly cooler"] in prompt
+    assert "for a small extra walk" not in prompt
+
+
+def test_same_route_prompt_has_nothing_to_compare():
+    prompt = service._explain_prompt(service._route_facts(explain_req(same_route)))
+    assert "cooler route" not in prompt.replace(service.VERDICT_GUIDANCE["same route"], "")
+    assert "saved" not in prompt and "extra walking minutes" not in prompt
+    assert "fastest route, walking minutes: 11" in prompt
+
+
+@pytest.mark.parametrize(
+    "change, reply",
+    [
+        # Real audit replies that read wrongly, despite correct numbers.
+        (HAYDEN_TO_OLD_MAIN, "The cooler route takes 5 minutes instead of 4 minutes, saving 1 "
+         "minutes in direct sun. It is clearly cooler for a small extra walk with no extra "
+         "time wasted besides 1 extra walking minutes."),
+        (HAYDEN_TO_OLD_MAIN, "The cooler route takes 5 minutes instead of 4, saving 1 minutes "
+         "in direct sun."),
+        (HAYDEN_TO_OLD_MAIN, "The cooler route takes no extra time and is 35% shaded."),
+        (HAYDEN_TO_OLD_MAIN, "The cooler route saves no time in the sun and is 35% shaded."),
+        (HAYDEN_TO_OLD_MAIN, "The cooler route is not much cooler at 35% shade."),
+        (BEACH_TO_HAYDEN, "The cooler route is clearly cooler with 70% shade."),
+        (same_route, "The route is worth it at 22% shade."),
+        # MU to Hayden Library at 09:00 has 1 stair segment; the model said "no stairs".
+        (MU_TO_HAYDEN, "The fastest route takes 5 minutes to walk when leaving at 09:00. "
+         "This route has 52 percent shade and 2 minutes in direct sun. There are no stairs "
+         "and no extra time needed."),
+        (MU_TO_HAYDEN, "The route is 52% shaded, without stairs."),
+    ],
+)
+def test_wording_that_contradicts_the_facts_is_replaced(gemini, change, reply):
+    gemini.reply = reply
+    req = explain_req(change)
+    assert service.explain_route(req).text == service._template_explanation(
+        service._route_facts(req)
+    )
+
+
+@pytest.mark.parametrize(
+    "change, reply",
+    [
+        (HAYDEN_TO_OLD_MAIN, "The cooler route takes 5 minutes instead of 4, about 1 extra "
+         "minute, and is 35% shaded instead of 6%. It saves about 1 minute in direct sun."),
+        (no_extra_time, "The cooler route takes no extra time and is 64% shaded."),
+        (BEACH_TO_HAYDEN, "The cooler route is not much cooler: 70% shade versus 62%, "
+         "with about the same walking time."),
+        (STADIUM_TO_GAMMAGE, "The cooler route takes 30 minutes instead of 27 and is 32% "
+         "shaded, saving 5 minutes in direct sun."),
+        (MU_TO_HAYDEN, "The fastest route is already the coolest: about 5 minutes, 52% "
+         "shaded, with 2 minutes in direct sun."),
+        (no_extra_time, "The cooler route has no stairs, takes no extra time and is 64% "
+         "shaded."),
+    ],
+)
+def test_natural_audit_style_replies_are_kept(gemini, change, reply):
+    gemini.reply = reply
+    assert service.explain_route(explain_req(change)).text == reply
 
 
 def test_more_than_three_sentences_is_replaced(gemini):

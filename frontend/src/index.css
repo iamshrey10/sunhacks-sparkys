@@ -127,3 +127,36 @@ body {
     background: var(--color-mist);
   }
 }
+
+/* Higher opacity for the glass over satellite imagery (about 85%). */
+.glass.glass-strong {
+  background: var(--color-mist);
+  background: color-mix(in srgb, var(--color-mist) 85%, transparent);
+}
+
+/* Long attributions (Esri plus CARTO) wrap instead of running off the screen. */
+.leaflet-control-attribution {
+  max-width: calc(100vw - 1rem);
+  white-space: normal;
+  text-align: right;
+}
+
+/* "Light" map type: the OpenStreetMap tiles softened to a calm, pale basemap. */
+.leaflet-layer.tiles-light {
+  filter: grayscale(1) contrast(0.82) brightness(1.12);
+}
+
+/* Place names over satellite imagery: light text with a dark outline. */
+.place-label span {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-white);
+  text-shadow:
+    0 0 3px var(--color-ink),
+    0 0 3px var(--color-ink),
+    0 1px 2px var(--color-ink);
+  pointer-events: none;
+}
