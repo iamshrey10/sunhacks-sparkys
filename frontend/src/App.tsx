@@ -38,6 +38,9 @@ type ApiState = 'checking' | 'online' | 'offline'
 const OUTSIDE_MESSAGE =
   'Outside the walking-route area. Choose a place on campus or Mill Ave.'
 
+/** The pop-up needs this much map above the sheet (header and search take the top). */
+const MIN_MAP_FOR_POPUP = 260
+
 /** Space the floating header and search bar take at the top of the map. */
 const TOP_PAD = 124
 
@@ -363,8 +366,8 @@ export default function App() {
           topPad={TOP_PAD}
           bottomPad={sheetPx}
           focus={focus}
-          position={walk.position}
-          nearby={walk.tracking?.nearby}
+          position={walkDirections ? walk.position : null}
+          nearby={walkDirections ? walk.tracking?.nearby : undefined}
           only={walkDirections ? walkDirections.kind : null}
           follow={walk.walking}
           mapPrefs={mapPrefs}
@@ -416,7 +419,7 @@ export default function App() {
         snap={snap}
         onSnapChange={setSnap}
         onSettled={setSheetPx}
-        scrollKey={tab}
+        scrollKey={walkDirections ? `${tab}-walk` : tab}
         reservedTop={TOP_PAD}
         tabs={tabs}
         peek={peekSummary}
@@ -485,6 +488,8 @@ export default function App() {
           key={walkId}
           nearby={walk.tracking.nearby}
           bottom={sheetPx}
+          // With the sheet pulled up there is no map left to float over.
+          hidden={window.innerHeight - sheetPx < MIN_MAP_FOR_POPUP}
           onShow={(point) => setFocus((f) => ({ point, id: (f?.id ?? 0) + 1 }))}
         />
       )}
