@@ -1,7 +1,6 @@
 # Cool Route — Tasks
 
-Ordered by dependency. Owners, file paths and estimates come from
-`docs/tasks/*.md`; where this list and those files differ, the task files win.
+Ordered by dependency.
 Deadline: working demo in under 8 hours, feature freeze 8:00 PM. No application
 code is produced by this spec — this is the plan.
 

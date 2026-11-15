@@ -4,7 +4,7 @@ One repo, one branch per person, pull requests into `main`.
 `main` is protected: nobody pushes to it directly.
 
 Branches: `shreyas`, `rohan`, `bhavisha`, `shravani`.
-Read `docs/ARCHITECTURE.md` and your task file in `docs/tasks/` first.
+Read `docs/ARCHITECTURE.md` first.
 
 ## One-time setup (everyone)
 
