@@ -1,6 +1,5 @@
-import { minutes } from '../routeSummary'
+import { extraWalkText, formatMin, minutes, verdict } from '../routeSummary'
 import type { RouteOption, RouteResponse } from '../types'
-import { COOLEST_TOKEN, FASTEST_TOKEN, token } from '../colors'
 
 interface Props {
   route: RouteResponse
@@ -13,43 +12,70 @@ interface Props {
   onShadeCommit: () => void
 }
 
-function Column({
+/** The headline: how much sun the coolest route saves, or an honest "not much". */
+function Hero({ route }: { route: RouteResponse }) {
+  const v = verdict(route)
+  return (
+    <div
+      className="rounded-xl bg-gradient-to-br from-mint to-sun p-4 shadow-card"
+      aria-live="polite"
+    >
+      {v.meaningful ? (
+        <>
+          <p className="text-sm font-semibold">The coolest route saves you</p>
+          <p className="text-3xl font-extrabold tabular-nums">
+            {formatMin(v.sunSavedS)} min{' '}
+            <span className="text-lg font-bold">less in the sun</span>
+          </p>
+          <p className="mt-1 text-sm font-semibold">{extraWalkText(v.extraS)}</p>
+        </>
+      ) : (
+        <>
+          <p className="text-lg font-extrabold">Not much cooler here</p>
+          <p className="mt-1 text-sm font-semibold">
+            {v.sunSavedS > 0
+              ? `The coolest route saves only about ${formatMin(v.sunSavedS)} min in the sun, so the fastest route is a good choice.`
+              : 'The coolest route has no less sun on this trip, so the fastest route is a good choice.'}
+          </p>
+        </>
+      )}
+    </div>
+  )
+}
+
+/** One route: shade (teal) against sun (amber), with the numbers in words. */
+function RouteBar({
   option,
   label,
-  color,
+  dot,
 }: {
   option: RouteOption
   label: string
-  color: string
+  dot: string
 }) {
+  const shade = Math.round(option.shade_pct)
   return (
-    <div
-      className="flex-1 rounded-lg border border-sky bg-white p-3 shadow-card"
-      style={{ borderTop: `5px solid ${color}` }}
-    >
-      <div className="font-bold">{label}</div>
-      <div className="mt-1 text-3xl font-extrabold text-ink">
-        {Math.round(option.shade_pct)}
-        <span className="text-base font-bold">% shade</span>
+    <div className="rounded-lg border border-sky bg-white p-3 shadow-card">
+      <div className="flex items-baseline justify-between">
+        <span className="flex items-center gap-2 font-bold">
+          <span className={`h-2.5 w-2.5 rounded-full ${dot}`} aria-hidden="true" />
+          {label}
+        </span>
+        <span className="text-sm tabular-nums text-muted">
+          {minutes(option.duration_s)} min walk
+        </span>
       </div>
       <div
-        className="mt-1 h-2 overflow-hidden rounded-full bg-sun"
-        aria-hidden="true"
+        className="mt-2 flex h-3 overflow-hidden rounded-full bg-sun-strong"
+        role="img"
+        aria-label={`${shade} percent shade, ${formatMin(option.sun_exposed_s)} minutes in direct sun`}
       >
-        <div
-          className="h-full rounded-full bg-cool" style={{ width: `${Math.round(option.shade_pct)}%` }}
-        />
+        <div className="h-full bg-cool" style={{ width: `${shade}%` }} />
       </div>
-      <dl className="mt-2 text-sm">
-        <div className="flex justify-between">
-          <dt>Walk</dt>
-          <dd className="font-semibold">{minutes(option.duration_s)} min</dd>
-        </div>
-        <div className="flex justify-between">
-          <dt>In sun</dt>
-          <dd className="font-semibold">{minutes(option.sun_exposed_s)} min</dd>
-        </div>
-      </dl>
+      <div className="mt-1 flex justify-between text-sm tabular-nums">
+        <span className="font-semibold">{shade}% shade</span>
+        <span>{formatMin(option.sun_exposed_s)} min in sun</span>
+      </div>
     </div>
   )
 }
@@ -65,15 +91,26 @@ export default function ComparisonCard({
   const { fastest, coolest } = route
 
   return (
-    <section aria-label="Route comparison" className="mb-3 space-y-2">
-      <div className="flex gap-2">
-        <Column option={fastest} label="Fastest" color={token(FASTEST_TOKEN)} />
-        <Column option={coolest} label="Coolest" color={token(COOLEST_TOKEN)} />
+    <section aria-label="Route comparison" className="mb-3 space-y-3">
+      <Hero route={route} />
+      <div className="space-y-2">
+        <RouteBar option={fastest} label="Fastest" dot="bg-neutral" />
+        <RouteBar option={coolest} label="Coolest" dot="bg-cool" />
+        <p className="flex gap-4 px-1 text-xs text-muted" aria-hidden="true">
+          <span className="flex items-center gap-1.5">
+            <span className="h-2.5 w-2.5 rounded-sm bg-cool" /> Shade
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="h-2.5 w-2.5 rounded-sm bg-sun-strong" /> Sun
+          </span>
+        </p>
       </div>
       {explanation && <p className="text-sm">{explanation}</p>}
       {coolest.stairs_count > 0 && (
-        <p className="text-sm">Coolest route has {coolest.stairs_count}{' '}
-          {coolest.stairs_count === 1 ? 'step' : 'steps'}.</p>
+        <p className="text-sm">
+          Coolest route has {coolest.stairs_count}{' '}
+          {coolest.stairs_count === 1 ? 'step' : 'steps'}.
+        </p>
       )}
       <div>
         <label htmlFor="shade-weight" className="flex justify-between font-semibold">

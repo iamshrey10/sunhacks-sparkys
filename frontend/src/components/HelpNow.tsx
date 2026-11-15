@@ -1,3 +1,4 @@
+import { Bus, Droplet, Library, MapPin, Snowflake, type LucideIcon } from 'lucide-react'
 import { useState } from 'react'
 import { api } from '../api'
 import { ListSkeleton } from './Skeleton'
@@ -23,10 +24,25 @@ const KIND_LABEL: Record<Resource['kind'], string> = {
   other: 'Other',
 }
 
+const KIND_ICON: Record<Resource['kind'], LucideIcon> = {
+  water: Droplet,
+  cooling_center: Snowflake,
+  library: Library,
+  transit: Bus,
+  other: MapPin,
+}
+
+/** Status badge. Unknown hours are neutral grey, never a yellow warning. */
 function openBadge(open: boolean | null) {
-  if (open === true) return { text: 'Open now', cls: 'bg-mint text-ink' }
-  if (open === false) return { text: 'Closed', cls: 'bg-sky text-ink' }
-  return { text: 'Hours unknown', cls: 'bg-sun text-ink' }
+  if (open === true)
+    return { text: 'Open now', cls: 'bg-mint text-ink', dot: 'bg-open' }
+  if (open === false)
+    return { text: 'Closed', cls: 'bg-error text-error-ink', dot: 'bg-closed' }
+  return {
+    text: 'Hours unknown',
+    cls: 'border border-neutral bg-white text-muted',
+    dot: 'bg-neutral',
+  }
 }
 
 const getPosition = () =>
@@ -117,19 +133,24 @@ export default function HelpNow({ onResources, resources, onWalk }: Props) {
       <ul className="space-y-2">
         {resources.map((r) => {
           const badge = openBadge(r.open_now)
+          const Icon = KIND_ICON[r.kind]
           return (
             <li key={r.id} className="rounded-lg border border-sky bg-white p-3 shadow-card">
-              <div className="flex items-start justify-between gap-2">
-                <div>
+              <div className="flex items-start gap-3">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-powder text-cool">
+                  <Icon size={20} aria-hidden="true" />
+                </span>
+                <div className="min-w-0 flex-1">
                   <p className="font-bold">{r.name}</p>
-                  <p className="text-sm text-muted">
+                  <p className="text-sm tabular-nums text-muted">
                     {KIND_LABEL[r.kind]}
                     {r.distance_m != null && ` · ${Math.round(r.distance_m)} m away`}
                   </p>
                 </div>
                 <span
-                  className={`shrink-0 rounded-md px-2 py-1 text-xs font-bold ${badge.cls}`}
+                  className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold ${badge.cls}`}
                 >
+                  <span className={`h-2 w-2 rounded-full ${badge.dot}`} aria-hidden="true" />
                   {badge.text}
                 </span>
               </div>
