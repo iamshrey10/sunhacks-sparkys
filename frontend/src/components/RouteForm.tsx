@@ -1,3 +1,4 @@
+import { Check } from 'lucide-react'
 import { useState } from 'react'
 import {
   DEFAULT_TIME,
@@ -21,9 +22,25 @@ interface Props {
 }
 
 const SENSITIVITY: Prefs['heat_sensitivity'][] = ['low', 'normal', 'high']
-const btn = 'min-h-11 rounded-md border-2 border-cool px-3 text-sm font-semibold '
+const btn = 'min-h-11 rounded-full border-2 border-cool px-3 text-sm font-semibold '
 const btnIdle = btn + 'bg-white text-ink'
 const btnOn = btn + 'bg-periwinkle text-ink'
+
+// Quick times. The routes use hourly shade layers, so these are good choices.
+const TIME_CHIPS = [
+  { label: '12 PM', time: '12:00' },
+  { label: '3 PM', time: '15:00' },
+  { label: '6 PM', time: '18:00' },
+]
+
+/** The current time in Tempe (no daylight saving), as HH:MM. */
+const tempeNow = () =>
+  new Date().toLocaleTimeString('en-GB', {
+    timeZone: 'America/Phoenix',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  })
 
 const fmt = (p: LatLng | null) =>
   p ? `${p.lat.toFixed(4)}, ${p.lng.toFixed(4)}` : 'Not set'
@@ -103,36 +120,55 @@ export default function RouteForm({
         </p>
       )}
 
-      <div className="flex items-center justify-between gap-3">
-        <label htmlFor="depart-time" className="font-semibold">
-          Leave at
-        </label>
-        <input
-          id="depart-time"
-          type="time"
-          required
-          value={value.departTime}
-          onChange={(e) =>
-            onChange({ ...value, departTime: e.target.value || DEFAULT_TIME })
-          }
-          className="min-h-11 rounded-md border-2 border-neutral bg-white px-3 text-base"
-        />
-      </div>
+      <fieldset>
+        <legend className="mb-1 font-semibold">Leave at</legend>
+        <div className="flex flex-wrap items-center gap-2">
+          {[{ label: 'Now', time: tempeNow() }, ...TIME_CHIPS].map((c) => {
+            const on = value.departTime === c.time
+            return (
+              <button
+                key={c.label}
+                type="button"
+                aria-pressed={on}
+                className={`${on ? btnOn : btnIdle} inline-flex items-center gap-1.5 tabular-nums`}
+                onClick={() => onChange({ ...value, departTime: c.time })}
+              >
+                {on && <Check size={16} aria-hidden="true" />}
+                {c.label}
+              </button>
+            )
+          })}
+          <input
+            id="depart-time"
+            type="time"
+            required
+            aria-label="Other time"
+            value={value.departTime}
+            onChange={(e) =>
+              onChange({ ...value, departTime: e.target.value || DEFAULT_TIME })
+            }
+            className="min-h-11 rounded-full border-2 border-sky bg-white px-3 text-sm tabular-nums"
+          />
+        </div>
+      </fieldset>
 
-      <label className="flex min-h-11 items-center justify-between gap-3 font-semibold">
-        Avoid stairs
-        <input
-          type="checkbox"
-          className="h-6 w-6 accent-cool"
-          checked={value.prefs.avoid_stairs}
-          onChange={(e) =>
+      <fieldset>
+        <legend className="mb-1 font-semibold">Preferences</legend>
+        <button
+          type="button"
+          aria-pressed={value.prefs.avoid_stairs}
+          className={`${value.prefs.avoid_stairs ? btnOn : btnIdle} inline-flex items-center gap-1.5`}
+          onClick={() =>
             onChange({
               ...value,
-              prefs: { ...value.prefs, avoid_stairs: e.target.checked },
+              prefs: { ...value.prefs, avoid_stairs: !value.prefs.avoid_stairs },
             })
           }
-        />
-      </label>
+        >
+          {value.prefs.avoid_stairs && <Check size={16} aria-hidden="true" />}
+          Avoid stairs
+        </button>
+      </fieldset>
 
       <fieldset>
         <legend className="mb-1 font-semibold">Heat sensitivity</legend>
