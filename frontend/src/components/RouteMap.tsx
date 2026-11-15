@@ -233,6 +233,31 @@ const marker = (fillColor: string) => ({
   fillOpacity: 1,
 })
 
+/**
+ * Draws a solid route line in over about 0.6 s when it is added to the map.
+ * Skipped when the person prefers reduced motion. Not used for dashed lines,
+ * which would lose their dashes.
+ */
+function drawIn(e: L.LeafletEvent) {
+  if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return
+  const el = (e.target as L.Polyline).getElement() as SVGPathElement | undefined
+  if (!el?.getTotalLength) return
+  const length = el.getTotalLength()
+  el.style.strokeDasharray = `${length}`
+  el.style.strokeDashoffset = `${length}`
+  void el.getBoundingClientRect() // start from the hidden state
+  el.style.transition = 'stroke-dashoffset 600ms ease-out'
+  el.style.strokeDashoffset = '0'
+  el.addEventListener(
+    'transitionend',
+    () => {
+      el.style.strokeDasharray = ''
+      el.style.transition = ''
+    },
+    { once: true },
+  )
+}
+
 export default function RouteMap({
   start,
   end,
@@ -252,6 +277,9 @@ export default function RouteMap({
 }: Props) {
   const satellite = mapPrefs.type === 'satellite'
   const base = BASE_LAYERS[mapPrefs.type]
+  const drawKey = route
+    ? `${route.coolest.geometry.length}-${Math.round(route.coolest.distance_m)}`
+    : ''
   return (
     <div
       className={`h-full w-full ${picking ? 'cursor-crosshair' : ''}`}
@@ -318,17 +346,22 @@ export default function RouteMap({
             )}
             {only !== 'fastest' && (
               <>
+                {/* A new key for each new route, so each one draws in. */}
                 <Polyline
+                  key={`case-${drawKey}`}
                   positions={route.coolest.geometry}
                   pathOptions={{
                     color: token('white'),
                     weight: 11,
                     opacity: satellite ? 1 : 0.95,
                   }}
+                  eventHandlers={{ add: drawIn }}
                 />
                 <Polyline
+                  key={`line-${drawKey}`}
                   positions={route.coolest.geometry}
                   pathOptions={{ color: token(COOLEST_TOKEN), weight: 6, opacity: 1 }}
+                  eventHandlers={{ add: drawIn }}
                 />
               </>
             )}
