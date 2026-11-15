@@ -2,13 +2,14 @@ import { useId } from 'react'
 
 const SUN = { x: 636, y: 316 }
 // Eight rays, every 30 degrees; the ones that would fall behind the pin are left out.
+// Radii 173 to 219 plus the round caps (13 each end) match the original artwork.
 const RAYS = [-150, -120, -90, -60, -30, 0, 30, 60].map((deg) => {
   const a = (deg * Math.PI) / 180
   return {
-    x1: SUN.x + 165 * Math.cos(a),
-    y1: SUN.y + 165 * Math.sin(a),
-    x2: SUN.x + 230 * Math.cos(a),
-    y2: SUN.y + 230 * Math.sin(a),
+    x1: SUN.x + 173 * Math.cos(a),
+    y1: SUN.y + 173 * Math.sin(a),
+    x2: SUN.x + 219 * Math.cos(a),
+    y2: SUN.y + 219 * Math.sin(a),
   }
 })
 

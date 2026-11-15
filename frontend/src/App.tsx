@@ -592,7 +592,14 @@ export default function App() {
         />
       )}
       {stage === 'intro' && (
-        <IntroSplash onDone={() => setStage(hasSeenWelcome() ? 'app' : 'welcome')} />
+        <IntroSplash
+          firstTime={!hasSeenWelcome()}
+          onStart={() => {
+            markWelcomeSeen()
+            setStage('app')
+          }}
+          onDone={() => setStage(hasSeenWelcome() ? 'app' : 'welcome')}
+        />
       )}
     </div>
   )
