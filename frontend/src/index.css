@@ -47,6 +47,8 @@
   --color-focus: #0b7d6d; /* focus ring */
   --color-header-from: #cdeee6;
   --color-header-to: #fde9c4;
+  --color-glow-aqua: #4fd8c4; /* soft aqua light, thin accents only */
+  --color-glow-violet: #b9a6f0; /* soft lavender light, thin accents only */
 
   --radius-*: initial;
   --radius-md: 12px;
@@ -58,6 +60,28 @@
   --shadow-card: 0 1px 2px rgb(11 27 43 / 0.06), 0 4px 12px rgb(11 27 43 / 0.08);
   --shadow-pop: 0 2px 4px rgb(11 27 43 / 0.08), 0 8px 24px rgb(11 27 43 / 0.14);
   --shadow-sheet: 0 -2px 6px rgb(11 27 43 / 0.08), 0 -10px 32px rgb(11 27 43 / 0.16);
+
+  /*
+   * Glow: soft light for THIN accents only (hairlines, rings, pins, the route
+   * halo). Never behind text. The shadows are static: they are never animated.
+   */
+  --shadow-glow-aqua:
+    0 0 0 1px color-mix(in srgb, var(--color-glow-aqua) 45%, transparent),
+    0 0 14px color-mix(in srgb, var(--color-glow-aqua) 35%, transparent);
+  --shadow-glow-violet:
+    0 0 0 1px color-mix(in srgb, var(--color-glow-violet) 50%, transparent),
+    0 0 14px color-mix(in srgb, var(--color-glow-violet) 35%, transparent);
+
+  /*
+   * Motion: three durations, a calm ease-out and a gentle overshoot. Animate
+   * only transform and opacity (and SVG stroke-dashoffset). Use them as
+   * duration-(--motion-base) ease-(--ease-out-soft) in Tailwind, or var(...) in CSS.
+   */
+  --motion-fast: 150ms;
+  --motion-base: 250ms;
+  --motion-slow: 450ms;
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 
   /* Type scale: 28 / 20 / 16 / 14 (plus 12 for captions). */
   --text-*: initial;
@@ -88,6 +112,30 @@ body {
   background: var(--color-mist);
   color: var(--color-ink);
   overscroll-behavior: none;
+}
+
+/*
+ * Reduced motion: nothing animates or transitions, and every value is shown
+ * immediately. This is the one global guard; components may still check the
+ * preference themselves where they drive animation from script.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    animation-delay: 0ms !important;
+    transition-duration: 0.001ms !important;
+    transition-delay: 0ms !important;
+  }
+}
+
+/* A hidden page pauses its CSS animations (see main.tsx). */
+:root[data-page-hidden='true'] *,
+:root[data-page-hidden='true'] *::before,
+:root[data-page-hidden='true'] *::after {
+  animation-play-state: paused !important;
 }
 
 /* In the base layer so a component can restyle focus (e.g. the search bar). */
