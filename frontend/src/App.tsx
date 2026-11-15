@@ -290,7 +290,7 @@ export default function App() {
           type="button"
           disabled={loading}
           onClick={() => findRoute(request)}
-          className="min-h-11 w-full rounded-lg bg-periwinkle border border-cool text-base font-bold text-ink shadow-card disabled:border-sky disabled:bg-sky disabled:text-ink"
+          className="btn-sheen min-h-11 w-full rounded-lg bg-periwinkle border border-cool text-base font-bold text-ink shadow-card disabled:border-sky disabled:bg-sky disabled:text-ink"
         >
           {loading ? 'Finding route…' : 'Find cool route'}
         </button>

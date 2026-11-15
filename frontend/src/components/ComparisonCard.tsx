@@ -17,7 +17,7 @@ function Hero({ route }: { route: RouteResponse }) {
   const v = verdict(route)
   return (
     <div
-      className="rounded-xl bg-gradient-to-br from-mint to-sun p-4 shadow-card"
+      className="relative hairline rounded-xl border bg-gradient-to-br from-mint to-sun p-4 shadow-card"
       aria-live="polite"
     >
       {v.meaningful ? (
@@ -55,7 +55,7 @@ function RouteBar({
 }) {
   const shade = Math.round(option.shade_pct)
   return (
-    <div className="rounded-lg border border-sky bg-white p-3 shadow-card">
+    <div className="relative hairline rounded-lg border bg-gradient-to-br from-white to-powder p-3 shadow-card">
       <div className="flex items-baseline justify-between">
         <span className="flex items-center gap-2 font-bold">
           <span className={`h-2.5 w-2.5 rounded-full ${dot}`} aria-hidden="true" />

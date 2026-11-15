@@ -51,9 +51,9 @@
   --color-glow-violet: #b9a6f0; /* soft lavender light, thin accents only */
 
   --radius-*: initial;
-  --radius-md: 12px;
-  --radius-lg: 16px;
-  --radius-xl: 24px;
+  --radius-md: 14px;
+  --radius-lg: 18px;
+  --radius-xl: 28px;
   --radius-full: 9999px;
 
   --shadow-*: initial;
@@ -175,7 +175,10 @@ body {
   backdrop-filter: blur(12px);
   border: 1px solid var(--color-sky);
   border: 1px solid color-mix(in srgb, var(--color-sky) 60%, transparent);
-  box-shadow: var(--shadow-pop);
+  /* Layered: a soft drop shadow plus a faint inner top highlight. */
+  box-shadow:
+    var(--shadow-pop),
+    inset 0 1px 0 rgb(255 255 255 / 0.55);
 }
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .glass {
@@ -289,6 +292,77 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .route-flow,
   .pin-pulse {
+    display: none;
+  }
+}
+
+/*
+ * Gradient hairline: a 1 px aqua-to-violet ring drawn by a masked pseudo-element,
+ * so it works on translucent surfaces without tinting them. The element must be
+ * positioned (relative or absolute). Not for scrolling containers, where the
+ * ring would scroll with the content.
+ */
+.hairline {
+  border-color: transparent;
+}
+.hairline::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-glow-aqua) 80%, transparent),
+    color-mix(in srgb, var(--color-glow-violet) 80%, transparent)
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box exclude,
+    linear-gradient(#000 0 0);
+  pointer-events: none;
+}
+
+/*
+ * A soft light sweep across an ENABLED primary button, a few seconds apart.
+ * It paints above the button background but below the text (negative z-index in
+ * an isolated stacking context), so it never touches the label. transform only.
+ */
+.btn-sheen {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+}
+.btn-sheen::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 45%;
+  z-index: -1;
+  background: linear-gradient(100deg, transparent, rgb(255 255 255 / 0.5), transparent);
+  transform: translateX(-130%) skewX(-14deg);
+  animation: btn-sheen 7s var(--ease-out-soft) 1.5s infinite;
+  pointer-events: none;
+}
+.btn-sheen:disabled::before {
+  display: none;
+}
+@keyframes btn-sheen {
+  0%,
+  72% {
+    transform: translateX(-130%) skewX(-14deg);
+  }
+  100% {
+    transform: translateX(330%) skewX(-14deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .btn-sheen::before {
     display: none;
   }
 }

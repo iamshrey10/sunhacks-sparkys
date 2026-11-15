@@ -254,7 +254,7 @@ export default function BottomSheet({
       ref={sheetRef}
       role="region"
       aria-label="Route planner"
-      className={`absolute inset-x-0 bottom-0 z-[1100] flex flex-col rounded-t-xl bg-white shadow-sheet ${
+      className={`hairline absolute inset-x-0 bottom-0 z-[1100] flex flex-col rounded-t-xl bg-white shadow-sheet ${
         dragHeight === null
           ? 'transition-[height] duration-[250ms] ease-out motion-reduce:transition-none'
           : ''

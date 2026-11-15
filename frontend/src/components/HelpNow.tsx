@@ -93,7 +93,7 @@ export default function HelpNow({ onResources, resources, onWalk }: Props) {
         type="button"
         onClick={find}
         disabled={busy}
-        className="min-h-16 w-full rounded-lg bg-periwinkle border border-cool text-lg font-bold text-ink shadow-card disabled:border-sky disabled:bg-sky disabled:text-ink"
+        className="btn-sheen min-h-16 w-full rounded-lg bg-periwinkle border border-cool text-lg font-bold text-ink shadow-card disabled:border-sky disabled:bg-sky disabled:text-ink"
       >
         {status === 'locating'
           ? 'Finding your location…'
