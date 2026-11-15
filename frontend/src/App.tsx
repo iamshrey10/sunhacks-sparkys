@@ -417,7 +417,26 @@ export default function App() {
         </div>
         <div className="flex items-center gap-2">
           <SampleBadge />
-          <span className="text-xs text-ink">API: {apiState}</span>
+          <span
+            role="status"
+            className="inline-flex items-center gap-1.5 rounded-full bg-white/70 px-2.5 py-1 text-xs font-bold text-ink"
+          >
+            <span
+              className={`h-2 w-2 rounded-full ${
+                apiState === 'online'
+                  ? 'bg-open motion-safe:animate-pulse'
+                  : apiState === 'offline'
+                    ? 'bg-closed'
+                    : 'bg-neutral'
+              }`}
+              aria-hidden="true"
+            />
+            {apiState === 'online'
+              ? 'Live'
+              : apiState === 'offline'
+                ? 'Offline'
+                : 'Connecting'}
+          </span>
         </div>
       </header>
 
