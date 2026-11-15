@@ -22,6 +22,9 @@ import { walkHeadline } from './walkLogic'
 import { useWalk } from './hooks/useWalk'
 import { RouteSkeleton } from './components/Skeleton'
 import Toast from './components/Toast'
+import IntroSplash from './components/IntroSplash'
+import WelcomeScreen from './components/WelcomeScreen'
+import { hasSeenWelcome, markWelcomeSeen } from './welcome'
 import RouteMap from './components/RouteMap'
 import SampleBadge from './components/SampleBadge'
 import { summaryText } from './routeSummary'
@@ -53,7 +56,14 @@ const MIN_MAP_FOR_POPUP = 260
 /** Space the floating header and search bar take at the top of the map. */
 const TOP_PAD = 124
 
+type Stage = 'intro' | 'welcome' | 'app'
+
 export default function App() {
+  // The brand video plays first, then a welcome screen (once per device). The app
+  // loads underneath meanwhile. "?nointro" skips both, for testing.
+  const [stage, setStage] = useState<Stage>(() =>
+    new URLSearchParams(window.location.search).has('nointro') ? 'app' : 'intro',
+  )
   const [apiState, setApiState] = useState<ApiState>(
     USE_MOCKS ? 'offline' : 'checking',
   )
@@ -571,6 +581,18 @@ export default function App() {
           }}
           onDismiss={() => setError(null)}
         />
+      )}
+
+      {stage === 'welcome' && (
+        <WelcomeScreen
+          onStart={() => {
+            markWelcomeSeen()
+            setStage('app')
+          }}
+        />
+      )}
+      {stage === 'intro' && (
+        <IntroSplash onDone={() => setStage(hasSeenWelcome() ? 'app' : 'welcome')} />
       )}
     </div>
   )
