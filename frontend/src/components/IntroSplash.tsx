@@ -130,7 +130,7 @@ export default function IntroSplash({ firstTime, onStart, onDone }: Props) {
             Get started
           </button>
           <p className="mt-3 text-center text-xs text-muted">
-            No sign-in needed. Your preferences stay on this phone.
+            Sign in to personalise Cool Route, or continue as a guest.
           </p>
         </div>
       )}
