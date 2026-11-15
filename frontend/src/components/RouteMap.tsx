@@ -346,6 +346,20 @@ export default function RouteMap({
             )}
             {only !== 'fastest' && (
               <>
+                {/* A soft aqua halo under the route: a second, wider line (no CSS filter). */}
+                <Polyline
+                  key={`halo-${drawKey}`}
+                  positions={route.coolest.geometry}
+                  pathOptions={{
+                    color: token('glow-aqua'),
+                    weight: 22,
+                    opacity: satellite ? 0.4 : 0.28,
+                    lineCap: 'round',
+                    lineJoin: 'round',
+                    interactive: false,
+                    className: 'route-halo',
+                  }}
+                />
                 {/* A new key for each new route, so each one draws in. */}
                 <Polyline
                   key={`case-${drawKey}`}
@@ -362,6 +376,24 @@ export default function RouteMap({
                   positions={route.coolest.geometry}
                   pathOptions={{ color: token(COOLEST_TOKEN), weight: 6, opacity: 1 }}
                   eventHandlers={{ add: drawIn }}
+                />
+                {/*
+                  Slow flowing light on the main line: thin white dots that drift
+                  along it once it has drawn in. The solid line underneath stays
+                  fully readable; hidden entirely for reduced motion (index.css).
+                */}
+                <Polyline
+                  key={`flow-${drawKey}`}
+                  positions={route.coolest.geometry}
+                  pathOptions={{
+                    color: token('white'),
+                    weight: 3,
+                    opacity: 0.8,
+                    dashArray: '1 22',
+                    lineCap: 'round',
+                    interactive: false,
+                    className: 'route-flow',
+                  }}
                 />
               </>
             )}
@@ -393,6 +425,33 @@ export default function RouteMap({
             <Tooltip>{p.name}</Tooltip>
           </CircleMarker>
         ))}
+        {/* Soft pulse rings under the start and end pins (transform and opacity only). */}
+        {start && (
+          <CircleMarker
+            center={[start.lat, start.lng]}
+            radius={9}
+            pathOptions={{
+              stroke: false,
+              fillColor: token('glow-aqua'),
+              fillOpacity: 0.5,
+              interactive: false,
+              className: 'pin-pulse',
+            }}
+          />
+        )}
+        {end && (
+          <CircleMarker
+            center={[end.lat, end.lng]}
+            radius={9}
+            pathOptions={{
+              stroke: false,
+              fillColor: token('glow-violet'),
+              fillOpacity: 0.55,
+              interactive: false,
+              className: 'pin-pulse pin-pulse-late',
+            }}
+          />
+        )}
         {start && (
           <CircleMarker
             center={[start.lat, start.lng]}
@@ -412,7 +471,13 @@ export default function RouteMap({
             <CircleMarker
               center={[position.lat, position.lng]}
               radius={18}
-              pathOptions={{ stroke: false, fillColor: token('focus'), fillOpacity: 0.2 }}
+              pathOptions={{
+                stroke: false,
+                fillColor: token('focus'),
+                fillOpacity: 0.2,
+                interactive: false,
+                className: 'pin-breathe',
+              }}
             />
             <CircleMarker
               center={[position.lat, position.lng]}
