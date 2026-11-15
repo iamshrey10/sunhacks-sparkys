@@ -12,36 +12,41 @@
  * are for thin or small things only: route lines, bar and ring fills, borders,
  * icons and focus rings.
  *
- * Contrast (WCAG, checked with a script): ink on mist 10.1:1, powder 9.6:1,
- * sky 8.2:1, periwinkle 6.4:1, mint 7.7:1, lavender 7.3:1, sun 7.9:1.
- * muted text is 4.5:1 on mist, powder and white (use ink, not muted, on sky).
- * cool and neutral are 3:1 or more on white, mist and powder.
- * Adjusted from the brief to reach these ratios: muted #5B7389 -> #5A7187,
- * cool #35A7C2 -> #3098B0, neutral #8CA0B3 -> #778FA5.
- * The sun bar fill (#E9A74C) is 2.1:1 on white: it is a labelled bar, never the
+ * Concept: sun vs shade. Shade is teal (cool, mint, periwinkle), sun exposure is
+ * amber (sun, sun-strong, hot). The token names are kept from the first palette;
+ * only the hues changed. "periwinkle" is now the primary teal fill.
+ *
+ * Contrast (WCAG, checked with a script): ink on white 17.4:1, mist 16.3:1,
+ * powder 15.3:1, sky 13.4:1, periwinkle 11.7:1, mint 13.6:1, lavender 14.6:1,
+ * sun 14.4:1, error 12.7:1. muted text is at least 5.5:1 on white, mist and
+ * powder. cool is 3:1 or more on white, mist and powder (thin elements only).
+ * The sun bar fill (#F59E0B) is 2.1:1 on white: it is a labelled bar, never the
  * only signal.
  */
 @theme static {
   --color-*: initial;
   --color-white: #ffffff;
   --color-transparent: transparent;
-  --color-mist: #f4f9fd; /* app background */
-  --color-powder: #eaf4fb; /* cards, tinted surfaces */
-  --color-sky: #cfe3f6; /* chips, borders, inactive tabs */
-  --color-periwinkle: #a9cbf0; /* primary buttons, active tab */
-  --color-mint: #a8e6dd; /* success, shade fills */
-  --color-lavender: #d6d1f5; /* secondary accent */
-  --color-ink: #24405a; /* text and icons on pastel */
-  --color-muted: #5a7187; /* secondary text */
-  --color-cool: #3098b0; /* coolest route, ring and bar fills (thin elements) */
-  --color-neutral: #778fa5; /* fastest route (dashed), neutral lines, borders */
-  --color-sun: #f7d9a8; /* sun exposure fill */
-  --color-sun-strong: #e9a74c; /* sun exposure line / bar */
-  --color-error: #f6c4c4; /* error fill */
-  --color-error-ink: #7a2e2e; /* error text */
-  --color-focus: #4f8fd1; /* focus ring */
-  --color-header-from: #cfe6fa;
-  --color-header-to: #d9f2ee;
+  --color-mist: #f4f8fb; /* app background */
+  --color-powder: #e8f2f5; /* cards, tinted surfaces */
+  --color-sky: #d3e5ea; /* chips, borders, inactive tabs */
+  --color-periwinkle: #9fe0d3; /* primary buttons, active tab and chip (teal) */
+  --color-mint: #b9eee3; /* success, shade fills */
+  --color-lavender: #fde9c4; /* notices (amber tint) */
+  --color-ink: #0b1b2b; /* text and icons */
+  --color-muted: #4d6376; /* secondary text */
+  --color-cool: #0f9d8a; /* shade: coolest route, bar fills (thin elements) */
+  --color-neutral: #6f8296; /* fastest route (dashed), neutral lines, borders */
+  --color-sun: #fde7c2; /* sun exposure fill */
+  --color-sun-strong: #f59e0b; /* sun exposure line / bar */
+  --color-hot: #f97316; /* high exposure */
+  --color-open: #16a34a; /* open status dot */
+  --color-closed: #dc2626; /* closed status dot */
+  --color-error: #fbd3d3; /* error fill */
+  --color-error-ink: #8a1c1c; /* error text */
+  --color-focus: #0b7d6d; /* focus ring */
+  --color-header-from: #cdeee6;
+  --color-header-to: #fde9c4;
 
   --radius-*: initial;
   --radius-md: 12px;
@@ -50,10 +55,11 @@
   --radius-full: 9999px;
 
   --shadow-*: initial;
-  --shadow-card: 0 1px 2px rgb(36 64 90 / 0.06), 0 4px 12px rgb(36 64 90 / 0.08);
-  --shadow-pop: 0 2px 4px rgb(36 64 90 / 0.08), 0 8px 24px rgb(36 64 90 / 0.14);
-  --shadow-sheet: 0 -2px 6px rgb(36 64 90 / 0.08), 0 -10px 32px rgb(36 64 90 / 0.16);
+  --shadow-card: 0 1px 2px rgb(11 27 43 / 0.06), 0 4px 12px rgb(11 27 43 / 0.08);
+  --shadow-pop: 0 2px 4px rgb(11 27 43 / 0.08), 0 8px 24px rgb(11 27 43 / 0.14);
+  --shadow-sheet: 0 -2px 6px rgb(11 27 43 / 0.08), 0 -10px 32px rgb(11 27 43 / 0.16);
 
+  /* Type scale: 28 / 20 / 16 / 14 (plus 12 for captions). */
   --text-*: initial;
   --text-xs: 0.75rem;
   --text-xs--line-height: 1rem;
@@ -61,12 +67,12 @@
   --text-sm--line-height: 1.25rem;
   --text-base: 1rem;
   --text-base--line-height: 1.5rem;
-  --text-lg: 1.125rem;
-  --text-lg--line-height: 1.625rem;
+  --text-lg: 1.25rem;
+  --text-lg--line-height: 1.75rem;
   --text-xl: 1.375rem;
   --text-xl--line-height: 1.75rem;
-  --text-3xl: 1.875rem;
-  --text-3xl--line-height: 2.25rem;
+  --text-3xl: 1.75rem;
+  --text-3xl--line-height: 2.125rem;
 }
 
 html,
@@ -77,7 +83,8 @@ body,
 }
 
 body {
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Inter Variable', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
   background: var(--color-mist);
   color: var(--color-ink);
   overscroll-behavior: none;
