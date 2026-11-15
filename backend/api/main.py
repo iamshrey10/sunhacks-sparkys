@@ -4,9 +4,12 @@ from fastapi.responses import JSONResponse
 
 from backend.ai import service as ai
 from backend.api.config import get_settings
+from backend.api import navigation
 from backend.api.errors import UpstreamError
 from backend.api.ratelimit import SlidingWindowLimiter
 from backend.api.schemas import (
+    DirectionsRequest,
+    DirectionsResponse,
     ExplainRequest,
     ExplainResponse,
     Health,
@@ -16,6 +19,8 @@ from backend.api.schemas import (
     ResourcesResponse,
     RouteRequest,
     RouteResponse,
+    TrackRequest,
+    TrackResponse,
 )
 from backend.resources import service as resources
 from backend.routing import engine
@@ -74,6 +79,22 @@ def health() -> Health:
 def route(req: RouteRequest) -> RouteResponse:
     try:
         return engine.compute_routes(req)
+    except NotImplementedError as exc:
+        raise _not_ready(exc)
+
+
+@app.post("/directions", response_model=DirectionsResponse)
+def directions(req: DirectionsRequest) -> DirectionsResponse:
+    try:
+        return navigation.directions(req)
+    except NotImplementedError as exc:
+        raise _not_ready(exc)
+
+
+@app.post("/track", response_model=TrackResponse)
+def track(req: TrackRequest) -> TrackResponse:
+    try:
+        return navigation.tracking(req)
     except NotImplementedError as exc:
         raise _not_ready(exc)
 

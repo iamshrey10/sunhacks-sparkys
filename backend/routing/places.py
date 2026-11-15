@@ -14,7 +14,8 @@ import math
 from functools import lru_cache
 from pathlib import Path
 
-from backend.routing.engine import EARTH_RADIUS_M, WALK_SPEED_MPS
+from backend.routing.engine import WALK_SPEED_MPS
+from backend.routing.geo import Frame, cumulative_lengths, nearest_on_polyline
 
 PLACES_PATH = Path(__file__).resolve().parents[2] / "data" / "processed" / "places.json"
 
@@ -48,21 +49,15 @@ def places_along(
     """
     if len(geometry) < 2:
         return []
-    lat0 = geometry[0][0]
-    k_lat = math.radians(1) * EARTH_RADIUS_M
-    k_lng = k_lat * math.cos(math.radians(lat0))
-    route = [(lng * k_lng, lat * k_lat) for lat, lng in geometry]
-    cumulative = [0.0]
-    for a, b in zip(route, route[1:]):
-        cumulative.append(cumulative[-1] + math.dist(a, b))
+    frame = Frame(geometry[0][0])
+    route = [frame.xy(lat, lng) for lat, lng in geometry]
+    cumulative = cumulative_lengths(route)
 
     found = []
     for place in load_places():
         if groups and place["group"] not in groups:
             continue
-        distance, along = _nearest_on_route(
-            (place["lng"] * k_lng, place["lat"] * k_lat), route, cumulative
-        )
+        distance, along = nearest_on_polyline(frame.xy(place["lat"], place["lng"]), route, cumulative)
         if distance <= max_distance_m:
             found.append({
                 **place,
@@ -83,17 +78,3 @@ def places_along(
         found = found[:limit]
     return sorted(found, key=lambda p: (p["along_route_m"], p["distance_from_route_m"]))
 
-
-def _nearest_on_route(point, route, cumulative) -> tuple[float, float]:
-    """(distance to the route, distance along the route at the nearest point), metres."""
-    px, py = point
-    best_d2, best_along = math.inf, 0.0
-    for i in range(len(route) - 1):
-        (ax, ay), (bx, by) = route[i], route[i + 1]
-        vx, vy = bx - ax, by - ay
-        seg2 = vx * vx + vy * vy
-        t = 0.0 if seg2 == 0 else min(1.0, max(0.0, ((px - ax) * vx + (py - ay) * vy) / seg2))
-        d2 = (px - ax - t * vx) ** 2 + (py - ay - t * vy) ** 2
-        if d2 < best_d2:
-            best_d2, best_along = d2, cumulative[i] + t * math.sqrt(seg2)
-    return math.sqrt(best_d2), best_along

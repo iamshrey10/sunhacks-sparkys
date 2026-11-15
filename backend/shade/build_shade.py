@@ -248,6 +248,14 @@ def write_graph(edges: gpd.GeoDataFrame, nodes: dict, sun: dict) -> None:
             index[row.u], index[row.v], round(float(row.length), 1),
             1 if row.highway == "steps" else 0, coords,
         ])
+    # Street names, stored once and referenced by index (-1 = no name in OSM).
+    names: list[str] = []
+    edge_name = []
+    for row in edges.itertuples():
+        name = _street_name(getattr(row, "name", None))
+        if name is not None and name not in names:
+            names.append(name)
+        edge_name.append(names.index(name) if name is not None else -1)
     graph = {
         "meta": {
             "center": CENTER,
@@ -257,11 +265,23 @@ def write_graph(edges: gpd.GeoDataFrame, nodes: dict, sun: dict) -> None:
             "sun": sun,
             "edge_format": ["u", "v", "length_m", "is_steps", "geometry [lat, lng]"],
             "segment_id": "index into edges, as a string",
+            "names": "edge_name[i] indexes into top-level names; -1 means unnamed",
         },
+        "names": names,
+        "edge_name": edge_name,
         "nodes": [[round(nodes[n][0], 6), round(nodes[n][1], 6)] for n in node_ids],
         "edges": out_edges,
     }
     _write_json(PROCESSED_DIR / "graph.json", graph)
+
+
+def _street_name(value) -> str | None:
+    """OSM `name` as one string. Merged segments can carry a list: take the first."""
+    if isinstance(value, (list, tuple)):
+        value = value[0] if value else None
+    if value is None or (isinstance(value, float) and math.isnan(value)):
+        return None
+    return str(value).strip() or None
 
 
 def _dist2(a, b) -> float:

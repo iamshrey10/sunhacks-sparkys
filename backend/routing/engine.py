@@ -60,6 +60,10 @@ class Graph:
         self.nodes: list[tuple[float, float]] = [tuple(n) for n in raw["nodes"]]
         self.edges: list[list] = raw["edges"]  # [u, v, length_m, is_steps, geometry]
         self.lengths: list[float] = [e[2] for e in self.edges]
+        names = raw.get("names", [])
+        self.street_names: list[str | None] = [
+            names[i] if i >= 0 else None for i in raw.get("edge_name", [-1] * len(self.edges))
+        ]
         self.adjacency: list[list[tuple[int, int]]] = [[] for _ in self.nodes]
         for edge_id, (u, v, *_rest) in enumerate(self.edges):
             self.adjacency[u].append((v, edge_id))
@@ -278,7 +282,19 @@ def _build_option(kind: str, edges: list[list], shade: list[float],
     )
 
 
-def compute_routes(req: RouteRequest) -> RouteResponse:
+@dataclass(frozen=True)
+class Plan:
+    """Both routes for one request, as paths over graph edges and connectors."""
+
+    layer: str
+    edges: list[list]  # graph edges, then this request's connectors
+    shade: list[float]  # per edge, same indexing
+    parents: dict[int, int]  # connector edge id -> the graph edge it is cut from
+    fastest: list[tuple[int, int]]  # (edge id, node entered from)
+    coolest: list[tuple[int, int]]
+
+
+def plan_routes(req: RouteRequest) -> Plan:
     graph = load_graph()
     layer = nearest_layer(req.depart_time, graph.layers)
     layer_shade = load_shade(layer)
@@ -304,9 +320,15 @@ def compute_routes(req: RouteRequest) -> RouteResponse:
     fastest = _shortest_path(graph, links, lengths, blocked)
     coolest = _shortest_path(graph, links, heat_cost, blocked)
 
+    parents = {first_id + offset: c[5] for offset, c in enumerate(connectors)}
+    return Plan(layer, edges, shade, parents, fastest, coolest)
+
+
+def compute_routes(req: RouteRequest) -> RouteResponse:
+    plan = plan_routes(req)
     return RouteResponse(
-        fastest=_build_option("fastest", edges, shade, fastest),
-        coolest=_build_option("coolest", edges, shade, coolest),
+        fastest=_build_option("fastest", plan.edges, plan.shade, plan.fastest),
+        coolest=_build_option("coolest", plan.edges, plan.shade, plan.coolest),
         depart_time=req.depart_time,
-        shade_layer=layer,
+        shade_layer=plan.layer,
     )

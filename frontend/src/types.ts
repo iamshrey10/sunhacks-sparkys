@@ -40,6 +40,89 @@ export interface RouteResponse {
   source: 'model'
 }
 
+export type Maneuver =
+  | 'depart'
+  | 'continue'
+  | 'slight_left'
+  | 'slight_right'
+  | 'left'
+  | 'right'
+  | 'sharp_left'
+  | 'sharp_right'
+  | 'u_turn'
+  | 'stairs'
+  | 'arrive'
+
+export interface DirectionStep {
+  instruction: string
+  maneuver: Maneuver
+  /** null where OpenStreetMap has no street name. */
+  street: string | null
+  /** Where this step begins. */
+  location: LatLng
+  /** Metres walked before this step begins. */
+  start_along_m: number
+  distance_m: number
+  duration_s: number
+  /** 0-100 */
+  shade_pct: number
+  stairs: boolean
+}
+
+export type PlaceGroup = 'food' | 'cafe' | 'drinks' | 'sight'
+
+export interface NearbyPlace {
+  id: string
+  name: string
+  group: PlaceGroup
+  /** OpenStreetMap value, e.g. "restaurant". */
+  kind: string
+  location: LatLng
+  /** Unverified OpenStreetMap text. Never present it as "open now". */
+  listed_hours: string | null
+  source_url: string
+  /** From the route in /directions, from you in /track. */
+  distance_m: number
+  along_route_m: number
+  /** Only in /track: the place's closest point on the route is still ahead. */
+  ahead: boolean | null
+}
+
+export interface DirectionsRequest {
+  route: RouteRequest
+  kind?: 'fastest' | 'coolest'
+}
+
+export interface DirectionsResponse {
+  kind: 'fastest' | 'coolest'
+  steps: DirectionStep[]
+  distance_m: number
+  duration_s: number
+  places: NearbyPlace[]
+  shade_layer: string
+}
+
+export interface TrackRequest {
+  /** RouteOption.geometry of the route being walked. */
+  geometry: [number, number][]
+  position: LatLng
+  /** progress_m from the previous response. */
+  last_progress_m?: number | null
+  /** 20-500, default 120. */
+  radius_m?: number
+}
+
+export interface TrackResponse {
+  progress_m: number
+  remaining_m: number
+  remaining_s: number
+  distance_from_route_m: number
+  /** More than 35 m from the route: request a new route from here. */
+  off_route: boolean
+  arrived: boolean
+  nearby: NearbyPlace[]
+}
+
 export type ResourceKind =
   | 'water'
   | 'cooling_center'

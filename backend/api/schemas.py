@@ -55,6 +55,89 @@ class RouteResponse(BaseModel):
     source: Literal["model"] = "model"
 
 
+Maneuver = Literal[
+    "depart", "continue", "slight_left", "slight_right", "left", "right",
+    "sharp_left", "sharp_right", "u_turn", "stairs", "arrive",
+]
+
+
+class DirectionStep(BaseModel):
+    """One instruction of a turn-by-turn walk. Built from the route, never guessed."""
+
+    instruction: str
+    maneuver: Maneuver
+    # OpenStreetMap street name, None where the path has no name.
+    street: str | None = None
+    # Where this step begins.
+    location: LatLng
+    # Distance walked before this step begins, in metres.
+    start_along_m: float = Field(ge=0)
+    distance_m: float = Field(ge=0)
+    duration_s: float = Field(ge=0)
+    # Share of this step estimated to be in shade, 0-100.
+    shade_pct: float = Field(ge=0, le=100)
+    stairs: bool = False
+
+
+PlaceGroup = Literal["food", "cafe", "drinks", "sight"]
+
+
+class NearbyPlace(BaseModel):
+    """A restaurant, cafe, bar or sight from OpenStreetMap."""
+
+    id: str
+    name: str
+    group: PlaceGroup
+    # OpenStreetMap tag value, e.g. "restaurant", "museum".
+    kind: str
+    location: LatLng
+    # Unverified OpenStreetMap text. Never show it as "open now".
+    listed_hours: str | None = None
+    source_url: str
+    # Straight-line distance: from the route (in /directions) or from you (in /track).
+    distance_m: float = Field(ge=0)
+    # How far along the route the nearest point is.
+    along_route_m: float = Field(ge=0)
+    # Only in /track: True if that point is still ahead of you on the route.
+    ahead: bool | None = None
+
+
+class DirectionsRequest(BaseModel):
+    route: RouteRequest
+    kind: Literal["fastest", "coolest"] = "coolest"
+
+
+class DirectionsResponse(BaseModel):
+    kind: Literal["fastest", "coolest"]
+    steps: list[DirectionStep]
+    distance_m: float = Field(ge=0)
+    duration_s: float = Field(ge=0)
+    # Places within about 75 m of the route, in walking order.
+    places: list[NearbyPlace]
+    shade_layer: str
+
+
+class TrackRequest(BaseModel):
+    # The route being walked: RouteOption.geometry, [lat, lng] pairs.
+    geometry: list[tuple[float, float]] = Field(min_length=2, max_length=2000)
+    position: LatLng
+    # progress_m from the previous call; stops a route that doubles back matching early.
+    last_progress_m: float | None = Field(default=None, ge=0)
+    radius_m: int = Field(default=120, ge=20, le=500)
+
+
+class TrackResponse(BaseModel):
+    progress_m: float = Field(ge=0)
+    remaining_m: float = Field(ge=0)
+    remaining_s: float = Field(ge=0)
+    distance_from_route_m: float = Field(ge=0)
+    # True when you are more than 35 m from the route: ask /route again from here.
+    off_route: bool
+    arrived: bool
+    # Places within radius_m of you, nearest first (at most 8).
+    nearby: list[NearbyPlace]
+
+
 ResourceKind = Literal["water", "cooling_center", "library", "transit", "other"]
 
 

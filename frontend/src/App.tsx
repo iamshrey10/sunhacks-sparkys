@@ -13,6 +13,11 @@ import RouteForm from './components/RouteForm'
 import { DEFAULT_TIME, buildRequest, type FormValue, type PickTarget } from './form'
 import BottomSheet, { type Snap } from './components/BottomSheet'
 import ComparisonCard from './components/ComparisonCard'
+import DirectionsPanel from './components/DirectionsPanel'
+import NearbyPopup from './components/NearbyPopup'
+import WalkPanel from './components/WalkPanel'
+import { walkHeadline } from './walkLogic'
+import { useWalk } from './hooks/useWalk'
 import { RouteSkeleton } from './components/Skeleton'
 import Toast from './components/Toast'
 import RouteMap from './components/RouteMap'
@@ -20,6 +25,7 @@ import SampleBadge from './components/SampleBadge'
 import { summaryText } from './routeSummary'
 import { usePrefs } from './hooks/usePrefs'
 import {
+  type DirectionsResponse,
   type LatLng,
   type ParseResponse,
   type Resource,
@@ -90,6 +96,16 @@ export default function App() {
   // The chosen destination is beyond the walking-route area: never ask /route.
   const [endOutside, setEndOutside] = useState(false)
   const [route, setRoute] = useState<RouteResponse | null>(null)
+  // The request that produced `route`, so directions match the line on the map.
+  const [routed, setRouted] = useState<RouteRequest | null>(null)
+  // Which route the directions panel shows and "Start walking" follows.
+  const [dirKind, setDirKind] = useState<'fastest' | 'coolest'>('coolest')
+  // Directions of the walk in progress, or null when not walking.
+  const [walkDirections, setWalkDirections] = useState<DirectionsResponse | null>(null)
+  // Changes with every walk, so the nearby pop-up forgets places it already showed.
+  const [walkId, setWalkId] = useState(0)
+  const walk = useWalk()
+  const arrived = walk.tracking?.arrived ?? false
   const [explanation, setExplanation] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -158,8 +174,34 @@ export default function App() {
   // What Retry should run again after a failed request.
   const lastRequest = useRef<RouteRequest | null>(null)
 
+  const stopWalk = () => {
+    walk.stop()
+    setWalkDirections(null)
+  }
+
+  const startWalk = (d: DirectionsResponse) => {
+    if (!route) return
+    setWalkDirections(d)
+    setWalkId((n) => n + 1)
+    walk.start(route[d.kind].geometry)
+    // Get the panel out of the way so the map shows where you are.
+    setSnap('peek')
+  }
+
+  /** Off the route: plan a new one from where you are now to the same destination. */
+  const rerouteFromHere = () => {
+    const here = walk.position
+    if (!here || !form.end) return
+    const next = { ...form, start: here }
+    setForm(next)
+    setLabels((l) => ({ ...l, start: 'My location' }))
+    const req = buildRequest(next)
+    if (req) findRoute(req)
+  }
+
   const findRoute = (req: RouteRequest) => {
     if (endOutside) return
+    stopWalk()
     lastRequest.current = req
     setLoading(true)
     setError(null)
@@ -169,6 +211,7 @@ export default function App() {
       .then((r) => {
         // Bring the first result into view above the form.
         setRoute(r)
+        setRouted(req)
         // Show the route and the comparison together.
         setSnap('half')
         // The explanation is optional: if it fails, the app works without it.
@@ -202,6 +245,10 @@ export default function App() {
       ) : endOutside ? (
         <p role="status" className="min-h-11 rounded-lg bg-lavender px-3 py-2 text-sm font-bold text-ink">
           {OUTSIDE_MESSAGE}
+        </p>
+      ) : walkDirections ? (
+        <p aria-live="polite" className="min-h-11 rounded-lg bg-powder px-3 py-2 text-sm font-bold text-ink">
+          {walkHeadline(walkDirections, walk, arrived)}
         </p>
       ) : route ? (
         <p className="min-h-11 rounded-lg bg-powder px-3 py-2 text-sm font-bold text-ink">
@@ -316,6 +363,10 @@ export default function App() {
           topPad={TOP_PAD}
           bottomPad={sheetPx}
           focus={focus}
+          position={walk.position}
+          nearby={walk.tracking?.nearby}
+          only={walkDirections ? walkDirections.kind : null}
+          follow={walk.walking}
           mapPrefs={mapPrefs}
           onTileFailure={onTileFailure}
         />
@@ -380,6 +431,15 @@ export default function App() {
             onWalk={walkTo}
           />
         ) : (
+          walkDirections ? (
+            <WalkPanel
+              directions={walkDirections}
+              walk={walk}
+              arrived={arrived}
+              onStop={stopWalk}
+              onReroute={rerouteFromHere}
+            />
+          ) : (
           <div className="pt-1">
             {loading && !route && <RouteSkeleton />}
             {route && (
@@ -394,6 +454,16 @@ export default function App() {
                 onShadeCommit={() => request && !endOutside && findRoute(request)}
               />
             )}
+            {route && routed && (
+              <DirectionsPanel
+                route={route}
+                request={routed}
+                kind={dirKind}
+                onKindChange={setDirKind}
+                onStart={startWalk}
+                onFocus={(point) => setFocus((f) => ({ point, id: (f?.id ?? 0) + 1 }))}
+              />
+            )}
             <AskBox onParsed={applyParsed} onDestination={pickByText} />
             <RouteForm
               value={form}
@@ -406,8 +476,18 @@ export default function App() {
               notice={endOutside ? OUTSIDE_MESSAGE : undefined}
             />
           </div>
+          )
         )}
       </BottomSheet>
+
+      {walk.walking && walk.tracking && (
+        <NearbyPopup
+          key={walkId}
+          nearby={walk.tracking.nearby}
+          bottom={sheetPx}
+          onShow={(point) => setFocus((f) => ({ point, id: (f?.id ?? 0) + 1 }))}
+        />
+      )}
 
       {mapNotice && (
         <Toast
