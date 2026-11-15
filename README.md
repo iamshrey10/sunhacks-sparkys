@@ -99,16 +99,44 @@ flowchart LR
 
 ## Run it
 
-Requirements: Python 3.12, Node 20+.
+Requirements: Python 3.12, Node 20+. Use three terminals, each starting at the repo root.
+
+macOS / Linux:
 
 ```bash
-python3.12 -m venv .venv && source .venv/bin/activate      # Windows: .venv\Scripts\activate
+# Terminal 1: API
+python3.12 -m venv .venv && source .venv/bin/activate
 pip install -r backend/requirements.txt
 cp .env.example .env            # add your own GEMINI_API_KEY, GEMINI_MODEL, TINYFISH_API_KEY
 uvicorn backend.api.main:app --port 8000
 
+# Terminal 2: app, then open http://localhost:5173
 cd frontend && npm install && cp .env.example .env.local && npm run dev
-pytest backend/tests            # from the repo root
+
+# Terminal 3: tests
+source .venv/bin/activate && pytest backend/tests
+```
+
+Windows (PowerShell, one command per line):
+
+```powershell
+# Terminal 1: API
+py -3.12 -m venv .venv
+Set-ExecutionPolicy -Scope CurrentUser RemoteSigned   # once, if activate says scripts are disabled
+.venv\Scripts\activate
+pip install -r backend/requirements.txt
+cp .env.example .env            # add your own GEMINI_API_KEY, GEMINI_MODEL, TINYFISH_API_KEY
+uvicorn backend.api.main:app --port 8000
+
+# Terminal 2: app, then open http://localhost:5173
+cd frontend
+npm install
+cp .env.example .env.local
+npm run dev
+
+# Terminal 3: tests
+.venv\Scripts\activate
+pytest backend/tests
 ```
 
 API reference: http://localhost:8000/docs and [docs/API_CONTRACT.md](docs/API_CONTRACT.md).
