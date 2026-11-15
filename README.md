@@ -180,7 +180,7 @@ cd mobile && VITE_API_URL=https://your-api-address.example npm run apk
 
 ## Demo
 
-See [docs/DEMO_SCRIPT.md](docs/DEMO_SCRIPT.md).
+Screen recording and photos: [Google Drive](https://drive.google.com/file/d/1jvZ-wFS8XuNwV_o_2fhHs7JaszeOq6_r/view?usp=sharing). The click-by-click walkthrough is in [docs/DEMO_SCRIPT.md](docs/DEMO_SCRIPT.md).
 
 ## Team
 
