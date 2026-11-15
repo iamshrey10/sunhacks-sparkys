@@ -13,6 +13,7 @@ import RouteForm from './components/RouteForm'
 import { DEFAULT_TIME, buildRequest, type FormValue, type PickTarget } from './form'
 import BottomSheet, { type Snap } from './components/BottomSheet'
 import ComparisonCard from './components/ComparisonCard'
+import DemoTripCard from './components/DemoTripCard'
 import DirectionsPanel from './components/DirectionsPanel'
 import NearbyPopup from './components/NearbyPopup'
 import WalkPanel from './components/WalkPanel'
@@ -37,6 +38,13 @@ type ApiState = 'checking' | 'online' | 'offline'
 
 const OUTSIDE_MESSAGE =
   'Outside the walking-route area. Choose a place on campus or Mill Ave.'
+
+/** The demo trip: Memorial Union to Tempe Beach Park at 3 PM. */
+const DEMO_TRIP = {
+  start: { lat: 33.4166, lng: -111.934 },
+  end: { lat: 33.43, lng: -111.944 },
+  time: '15:00',
+}
 
 /** The pop-up needs this much map above the sheet (header and search take the top). */
 const MIN_MAP_FOR_POPUP = 260
@@ -202,8 +210,8 @@ export default function App() {
     if (req) findRoute(req)
   }
 
-  const findRoute = (req: RouteRequest) => {
-    if (endOutside) return
+  const findRoute = (req: RouteRequest, force = false) => {
+    if (endOutside && !force) return
     stopWalk()
     lastRequest.current = req
     setLoading(true)
@@ -231,6 +239,26 @@ export default function App() {
         setError('We could not get a route right now. Please try again.')
       })
       .finally(() => setLoading(false))
+  }
+
+  const runDemoTrip = () => {
+    const next: FormValue = {
+      ...form,
+      start: DEMO_TRIP.start,
+      end: DEMO_TRIP.end,
+      departTime: DEMO_TRIP.time,
+    }
+    // Keep the search text we set below (a changed end normally clears it).
+    fromSearch.current = true
+    setForm(next)
+    fromSearch.current = false
+    setLabels({ start: 'Memorial Union', end: 'Tempe Beach Park' })
+    search.setQuery('Tempe Beach Park')
+    setEndOutside(false)
+    setPicking(null)
+    setTab('route')
+    const req = buildRequest(next)
+    if (req) findRoute(req, true)
   }
 
   const startPicking = (target: PickTarget | null) => {
@@ -444,6 +472,7 @@ export default function App() {
             />
           ) : (
           <div className="pt-1">
+            {!route && !loading && <DemoTripCard onRun={runDemoTrip} loading={loading} />}
             {loading && !route && <RouteSkeleton />}
             {route && (
               <ComparisonCard
