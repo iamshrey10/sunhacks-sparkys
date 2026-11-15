@@ -1,3 +1,4 @@
+import MapCredits from './MapCredits'
 import L from 'leaflet'
 import { useEffect, useMemo, useRef } from 'react'
 import {
@@ -282,7 +283,7 @@ export default function RouteMap({
     : ''
   return (
     <div
-      className={`h-full w-full ${picking ? 'cursor-crosshair' : ''}`}
+      className={`relative h-full w-full ${picking ? 'cursor-crosshair' : ''}`}
       aria-label="Map of Tempe"
       // Keeps the OpenStreetMap attribution above the sheet (see index.css).
       style={{ '--sheet-h': `${bottomPad}px` } as React.CSSProperties}
@@ -292,6 +293,7 @@ export default function RouteMap({
         zoom={15}
         className="h-full w-full"
         zoomControl={false}
+        attributionControl={false}
       >
         {/* Only the active tile layer is mounted, so the attribution follows it. */}
         <GuardedTiles
@@ -490,6 +492,14 @@ export default function RouteMap({
           </>
         )}
       </MapContainer>
+      <MapCredits
+        credits={[
+          ...new Set([
+            base.attribution,
+            ...(mapPrefs.type === 'satellite' ? SATELLITE_LABELS.map((l) => l.attribution) : []),
+          ]),
+        ]}
+      />
     </div>
   )
 }

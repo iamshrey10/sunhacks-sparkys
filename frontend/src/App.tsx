@@ -4,6 +4,7 @@ import { api, USE_MOCKS } from './api'
 import AskBox from './components/AskBox'
 import FloatingSearch from './components/FloatingSearch'
 import LayersControl from './components/LayersControl'
+import LocateButton from './components/LocateButton'
 import { useMapPrefs } from './hooks/useMapPrefs'
 import { useRecents, type Recent } from './hooks/useRecents'
 import { useSearch } from './hooks/useSearch'
@@ -113,6 +114,8 @@ export default function App() {
   const search = useSearch(resources)
   const [recents, addRecent] = useRecents()
   const [mapPrefs, setMapPrefs] = useMapPrefs()
+  const [myLocation, setMyLocation] = useState<LatLng | null>(null)
+  const [locating, setLocating] = useState(false)
   const [mapNotice, setMapNotice] = useState<string | null>(null)
   const satellite = mapPrefs.type === 'satellite'
   const [searching, setSearching] = useState(false)
@@ -401,6 +404,34 @@ export default function App() {
     </nav>
   )
 
+  const recenter = () => {
+    if (!navigator.geolocation) {
+      setMapNotice('This device cannot share its location.')
+      return
+    }
+    setLocating(true)
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setLocating(false)
+        const point = { lat: pos.coords.latitude, lng: pos.coords.longitude }
+        const inTempe =
+          Math.abs(point.lat - 33.4194) < 0.08 && Math.abs(point.lng + 111.9341) < 0.1
+        if (inTempe) {
+          setMyLocation(point)
+          setFocus((f) => ({ point, id: (f?.id ?? 0) + 1 }))
+        } else {
+          setMapNotice('You are outside the Tempe campus area, so showing the campus.')
+          setFocus((f) => ({ point: { lat: 33.4194, lng: -111.9341 }, id: (f?.id ?? 0) + 1 }))
+        }
+      },
+      () => {
+        setLocating(false)
+        setMapNotice('Could not get your location. Allow location access and try again.')
+      },
+      { enableHighAccuracy: true, timeout: 10000 },
+    )
+  }
+
   return (
     <div className="relative h-dvh overflow-clip bg-mist">
       <div className="absolute inset-0">
@@ -414,7 +445,7 @@ export default function App() {
           topPad={TOP_PAD}
           bottomPad={sheetPx}
           focus={focus}
-          position={walkDirections ? walk.position : null}
+          position={walkDirections ? walk.position : myLocation}
           nearby={walkDirections ? walk.tracking?.nearby : undefined}
           only={walkDirections ? walkDirections.kind : null}
           follow={walk.walking}
@@ -488,6 +519,7 @@ export default function App() {
         strong={satellite}
       />
 
+      <LocateButton onLocate={recenter} busy={locating} strong={satellite} />
       <LayersControl prefs={mapPrefs} onChange={setMapPrefs} strong={satellite} />
 
       <BottomSheet

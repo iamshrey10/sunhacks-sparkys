@@ -28,6 +28,7 @@ interface Props {
 export default function IntroSplash({ firstTime, onStart, onDone }: Props) {
   const video = useRef<HTMLVideoElement>(null)
   const finished = useRef(false)
+  const started = useRef(false)
   const [fading, setFading] = useState(false)
   const [canSkip, setCanSkip] = useState(false)
   const [ended, setEnded] = useState(false)
@@ -47,12 +48,18 @@ export default function IntroSplash({ firstTime, onStart, onDone }: Props) {
 
   useEffect(() => {
     const showSkip = window.setTimeout(() => setCanSkip(true), 800)
+    // If the video has not started playing after 2.5 s (autoplay blocked, slow
+    // load), move on rather than leave a still frame with a play button.
+    const notPlaying = window.setTimeout(() => {
+      if (!started.current) finish()
+    }, 2500)
     // The video is 5 s long. If we are still playing at 8 s, something is wrong.
     const backstop = window.setTimeout(() => {
       if (!finished.current && !video.current?.ended) finish()
     }, still ? 1800 : 8000)
     return () => {
       window.clearTimeout(showSkip)
+      window.clearTimeout(notPlaying)
       window.clearTimeout(backstop)
     }
   }, [finish, still])
@@ -85,6 +92,10 @@ export default function IntroSplash({ firstTime, onStart, onDone }: Props) {
             autoPlay
             playsInline
             preload="auto"
+            poster={`${BASE}brand/intro-poster.jpg`}
+            onPlaying={() => {
+              started.current = true
+            }}
             onEnded={onVideoEnded}
             onError={finish}
             aria-hidden="true"
