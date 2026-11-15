@@ -1,3 +1,4 @@
+import { tap } from './haptics'
 import { useEffect, useRef, useState } from 'react'
 import { api, USE_MOCKS } from './api'
 import AskBox from './components/AskBox'
@@ -154,6 +155,7 @@ export default function App() {
 
   const handleMapClick = (point: LatLng) => {
     if (!picking) return
+    tap()
     setForm((f) => ({ ...f, [picking]: point }))
     // Keep the map in view while choosing points.
     setSnap('peek')
@@ -290,7 +292,7 @@ export default function App() {
           type="button"
           disabled={loading}
           onClick={() => findRoute(request)}
-          className="min-h-11 w-full rounded-lg bg-periwinkle border border-cool text-base font-bold text-ink shadow-card disabled:border-sky disabled:bg-sky disabled:text-ink"
+          className="btn-sheen min-h-11 w-full rounded-lg bg-periwinkle border border-cool text-base font-bold text-ink shadow-card disabled:border-sky disabled:bg-sky disabled:text-ink"
         >
           {loading ? 'Finding route…' : 'Find cool route'}
         </button>
@@ -304,6 +306,7 @@ export default function App() {
 
   const pickPlace = (p: PlaceResult | Recent) => {
     const end = { lat: p.lat, lng: p.lng }
+    tap()
     fromSearch.current = true
     setForm((f) => ({ ...f, end }))
     fromSearch.current = false
@@ -382,7 +385,7 @@ export default function App() {
   )
 
   return (
-    <div className="relative h-dvh overflow-hidden bg-mist">
+    <div className="relative h-dvh overflow-clip bg-mist">
       <div className="absolute inset-0">
         <RouteMap
           start={form.start}
@@ -424,7 +427,7 @@ export default function App() {
             <span
               className={`h-2 w-2 rounded-full ${
                 apiState === 'online'
-                  ? 'bg-open motion-safe:animate-pulse'
+                  ? 'bg-open'
                   : apiState === 'offline'
                     ? 'bg-closed'
                     : 'bg-neutral'
@@ -525,6 +528,12 @@ export default function App() {
               loading={loading}
               labels={labels}
               notice={endOutside ? OUTSIDE_MESSAGE : undefined}
+              // Only re-request when a route is already showing, as the shade slider does.
+              onTimeCommit={(time) => {
+                if (route && request && !endOutside) {
+                  findRoute({ ...request, depart_time: time })
+                }
+              }}
             />
           </div>
           )

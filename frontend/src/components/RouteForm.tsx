@@ -7,6 +7,7 @@ import {
   type PickTarget,
 } from '../form'
 import type { LatLng, Prefs, RouteRequest } from '../types'
+import SunArc from './SunArc'
 
 interface Props {
   value: FormValue
@@ -19,6 +20,8 @@ interface Props {
   labels?: Partial<Record<PickTarget, string>>
   /** When set, routing is blocked and this message explains why. */
   notice?: string
+  /** The time was set and let go: ask for a fresh route if one is showing. */
+  onTimeCommit?: (time: string) => void
 }
 
 const SENSITIVITY: Prefs['heat_sensitivity'][] = ['low', 'normal', 'high']
@@ -54,6 +57,7 @@ export default function RouteForm({
   loading,
   labels,
   notice,
+  onTimeCommit,
 }: Props) {
   const [geoError, setGeoError] = useState<string | null>(null)
   const request = notice ? null : buildRequest(value)
@@ -122,7 +126,12 @@ export default function RouteForm({
 
       <fieldset>
         <legend className="mb-1 font-semibold">Leave at</legend>
-        <div className="flex flex-wrap items-center gap-2">
+        <SunArc
+          value={value.departTime}
+          onChange={(time) => onChange({ ...value, departTime: time })}
+          onCommit={(time) => onTimeCommit?.(time)}
+        />
+        <div className="mt-2 flex flex-wrap items-center gap-2">
           {[{ label: 'Now', time: tempeNow() }, ...TIME_CHIPS].map((c) => {
             const on = value.departTime === c.time
             return (
@@ -131,25 +140,29 @@ export default function RouteForm({
                 type="button"
                 aria-pressed={on}
                 className={`${on ? btnOn : btnIdle} inline-flex items-center gap-1.5 tabular-nums`}
-                onClick={() => onChange({ ...value, departTime: c.time })}
+                onClick={() => {
+                  onChange({ ...value, departTime: c.time })
+                  onTimeCommit?.(c.time)
+                }}
               >
                 {on && <Check size={16} aria-hidden="true" />}
                 {c.label}
               </button>
             )
           })}
-          <input
-            id="depart-time"
-            type="time"
-            required
-            aria-label="Other time"
-            value={value.departTime}
-            onChange={(e) =>
-              onChange({ ...value, departTime: e.target.value || DEFAULT_TIME })
-            }
-            className="min-h-11 rounded-full border-2 border-sky bg-white px-3 text-sm tabular-nums"
-          />
         </div>
+        {/* Native time field: visually hidden, still reachable by keyboard and assistive tech. */}
+        <input
+          id="depart-time"
+          type="time"
+          required
+          aria-label="Other time"
+          value={value.departTime}
+          onChange={(e) =>
+            onChange({ ...value, departTime: e.target.value || DEFAULT_TIME })
+          }
+          className="sr-only"
+        />
       </fieldset>
 
       <fieldset>
@@ -206,7 +219,7 @@ export default function RouteForm({
       <button
         type="submit"
         disabled={!request || loading}
-        className="min-h-12 w-full rounded-lg bg-periwinkle border border-cool text-base font-bold text-ink shadow-card disabled:border-sky disabled:bg-sky disabled:text-ink"
+        className="btn-sheen min-h-12 w-full rounded-lg bg-periwinkle border border-cool text-base font-bold text-ink shadow-card disabled:border-sky disabled:bg-sky disabled:text-ink"
       >
         {loading ? 'Finding route…' : 'Find cool route'}
       </button>

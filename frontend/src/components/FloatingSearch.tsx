@@ -139,7 +139,7 @@ export default function FloatingSearch({
     >
       <div
         data-search-surface
-        className={`glass ${strong ? 'glass-strong' : ''} pointer-events-auto flex min-h-12 items-center gap-2 rounded-xl px-4 focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-focus`}
+        className={`glass hairline relative ${strong ? 'glass-strong' : ''} pointer-events-auto flex min-h-12 items-center gap-2 rounded-xl px-4 focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-focus`}
       >
         <Search size={20} className="shrink-0 text-ink" aria-hidden="true" />
         <input

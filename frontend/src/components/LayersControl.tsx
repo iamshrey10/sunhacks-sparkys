@@ -111,7 +111,7 @@ export default function LayersControl({ prefs, onChange, strong }: Props) {
         aria-expanded={open}
         aria-controls={panelId}
         onClick={() => setOpen((o) => !o)}
-        className={`${glass} pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full text-ink`}
+        className={`${glass} hairline relative pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full text-ink`}
       >
         <Layers size={22} aria-hidden="true" />
       </button>
